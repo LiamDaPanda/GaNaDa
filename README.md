@@ -1,0 +1,83 @@
+# 가나다 디펜스 (GaNaDa Defense)
+
+A mobile-first **idle defense game** where you **swipe to draw Korean letters (한글 자음)**
+to cast different attacks against waves of **dokkaebi (도깨비, Korean goblins)** — inspired by
+brush/symbol-drawing action games. Draw a stroke, and the matching jamo erupts into fire,
+lightning, frost, and more.
+
+No build step, no images, no dependencies — everything (art, sound, recognition) is generated
+at runtime. Pure HTML5 Canvas + vanilla JavaScript ES modules. Works on phones and desktop, and
+installs as a PWA for offline play.
+
+## How to play
+
+1. **자동포 (Auto Qi)** fires on its own — that's the *idle* layer that grinds weak enemies and 💰.
+2. **Draw a consonant** anywhere on the screen with your finger (or mouse) to cast a spell.
+   Each drawing costs **먹 (ink / mana)**, which refills over time.
+3. Defend your **성문 (gate)** on the left. If its health hits zero, it's game over.
+4. Spend 💰 in the **🛒 대장간 (forge / shop)** on permanent upgrades. Upgrades and gold are
+   **saved** in your browser, so each run makes you stronger (idle/roguelite progression).
+5. Every **5th wave** spawns a **도깨비 대장 (boss dokkaebi)**.
+
+### The spellbook — which letter does what
+
+| Draw | Jamo | Spell | Effect |
+|------|------|-------|--------|
+| `┐`  | **ㅅ** | 화염탄 Fire Bolt | Homing bolt, explosion + burn (cheap, spammable) |
+| `7`-corner | **ㄱ** | 번개 Chain Lightning | Arcs between several enemies |
+| `L`  | **ㄴ** | 대지가르기 Earth Slam | Frontline AoE + knockback |
+| `○`  | **ㅇ** | 수호의 빛 Guardian Nova | Damages everything + **repairs the gate** |
+| `□`  | **ㅁ** | 서리감옥 Frost Prison | AoE damage + slow/freeze |
+| `zig-zag` | **ㄹ** | 용의 숨결 Dragon's Breath | Full-screen ultimate (most ink) |
+
+> The harder the letter is to draw, the stronger (and pricier) the spell. The on-screen rune bar
+> at the bottom is a live cheat-sheet.
+
+## Run it
+
+It's a static site. Any web server works (ES modules need `http://`, not `file://`):
+
+```bash
+npm start          # serves on http://localhost:8080
+# or
+python3 -m http.server 8080
+```
+
+Then open `http://localhost:8080` on your phone (same Wi-Fi) or desktop. On mobile, "Add to
+Home Screen" to install it as a fullscreen app.
+
+### Deploy to GitHub Pages
+
+Push this repo and enable **Settings → Pages → Deploy from branch** (root). The game is served
+as-is; no build required.
+
+## Project layout
+
+```
+index.html          # markup + HUD/overlays
+css/style.css        # mobile-first UI styling
+manifest.json, sw.js # PWA install + offline cache
+assets/icon.svg      # app icon (brushstroke ㄱ/ㅅ)
+src/
+  main.js            # bootstrap
+  game.js            # game loop, waves, combat, input, rendering glue
+  recognizer.js      # $1-style unistroke recognizer + jamo stroke templates
+  attacks.js         # spell definitions (per letter)
+  upgrades.js        # idle-economy upgrade definitions
+  entities.js        # Enemy / Projectile / Particle / FloatingText
+  render.js          # procedural canvas art (dokkaebi, gate, background)
+  ui.js              # DOM HUD, spell guide, shop, overlays
+  audio.js           # procedural WebAudio sound effects
+```
+
+## How letter recognition works
+
+`recognizer.js` implements the classic **$1 Unistroke Recognizer** pipeline
+(resample → scale → translate → nearest-template), but with **rotation normalization
+deliberately turned off** so a drawn `ㄱ` is never mistaken for a `ㄴ` — Korean letters are
+orientation-sensitive. Each jamo is stored as a single-stroke point template; the best match
+above a confidence threshold fires its spell, otherwise you get a `?` miss.
+
+## License
+
+MIT

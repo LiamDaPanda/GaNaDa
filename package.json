@@ -1,0 +1,12 @@
+{
+  "name": "ganada-defense",
+  "version": "1.0.0",
+  "description": "가나다 디펜스 — draw Korean letters to cast spells against dokkaebi. A mobile-first idle defense game.",
+  "type": "module",
+  "scripts": {
+    "start": "npx --yes serve -l 8080 .",
+    "dev": "npx --yes serve -l 8080 ."
+  },
+  "keywords": ["game", "korean", "hangul", "canvas", "mobile", "pwa", "idle", "defense"],
+  "license": "MIT"
+}

@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#150f1f" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <link rel="manifest" href="./manifest.json" />
+  <title>가나다 디펜스 — 한글 마법 디펜스</title>
+  <link rel="stylesheet" href="./css/style.css" />
+</head>
+<body>
+  <div id="app">
+    <canvas id="game"></canvas>
+
+    <!-- Top HUD -->
+    <header id="hud">
+      <div class="stat"><span class="lbl">물결</span><span id="wave">1</span></div>
+      <div class="stat"><span class="lbl">💰</span><span id="gold">0</span></div>
+      <div class="stat"><span class="lbl">점수</span><span id="score">0</span></div>
+      <div class="stat"><span class="lbl">최고</span><span id="best">1</span></div>
+      <div class="hud-actions">
+        <button id="soundToggle" class="icon-btn" title="소리">🔊</button>
+        <button id="shopToggle" class="icon-btn" title="상점">🛒</button>
+      </div>
+    </header>
+
+    <!-- Gate + mana bars -->
+    <div id="bars">
+      <div class="bar gate">
+        <div class="bar-label">🏯 성문</div>
+        <div class="bar-track"><div id="gateFill" class="bar-fill"></div></div>
+        <div id="gateText" class="bar-val">100/100</div>
+      </div>
+      <div class="bar mana">
+        <div class="bar-label">🖋️ 먹</div>
+        <div class="bar-track"><div id="manaFill" class="bar-fill ink"></div></div>
+        <div id="manaText" class="bar-val">60/60</div>
+      </div>
+    </div>
+
+    <!-- Spell guide (which letter does what) -->
+    <div id="runes"></div>
+
+    <!-- Wave banner -->
+    <div id="banner"></div>
+
+    <!-- Upgrade shop -->
+    <aside id="shop">
+      <div class="shop-head">
+        <h2>대장간 · 강화</h2>
+        <button id="shopClose" class="icon-btn">✕</button>
+      </div>
+      <p class="shop-hint">처치한 도깨비의 💰로 영구 강화 (저장됨)</p>
+      <div id="shopList"></div>
+    </aside>
+
+    <!-- Game over -->
+    <div id="gameOver">
+      <div class="go-card">
+        <h1>성문이 무너졌다…</h1>
+        <p id="goStats"></p>
+        <button id="restartBtn" class="big-btn">다시 도전</button>
+        <p class="go-tip">💡 강화는 그대로 유지됩니다. 💰를 모아 더 강해지세요!</p>
+      </div>
+    </div>
+
+    <!-- Title / how to play -->
+    <div id="title">
+      <div class="title-card">
+        <h1>가나다 디펜스</h1>
+        <p class="subtitle">한글을 그려 도깨비를 물리쳐라</p>
+        <div class="how">
+          <div class="how-row"><b>✍️ 그리기</b> 화면에 자음을 손가락으로 그리면 마법이 발동!</div>
+          <div class="how-row"><b>ㅅ</b> 화염탄 · <b>ㄱ</b> 번개 · <b>ㄴ</b> 대지 · <b>ㅇ</b> 수호 · <b>ㅁ</b> 서리 · <b>ㄹ</b> 궁극기</div>
+          <div class="how-row"><b>🌀 자동포</b>가 알아서 싸우니, 어려운 적엔 직접 마법을!</div>
+          <div class="how-row"><b>🛒 상점</b>에서 💰로 강화하고 더 높은 물결에 도전하세요.</div>
+        </div>
+        <button id="startBtn" class="big-btn">시작하기</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>
