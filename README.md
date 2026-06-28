@@ -70,12 +70,39 @@ vowels** work, including the iotized (double-tick) ones which are stronger versi
 Add a **third consonant (받침)** — e.g. **건** (ㄱ + ㅓ + ㄴ) or **혈** (ㅎ + ㅕ + ㄹ) — to fuse both
 consonants into a **screen-wide ultimate** that carries both their effects.
 
+### The whole alphabet (쌍자음 + 복합 모음)
+
+All **19 initial consonants and 21 vowels** are supported. The doubled consonants and compound
+vowels aren't separate gestures — they're **composed**, exactly like real Hangul, which keeps
+recognition rock-solid:
+
+- **쌍자음 (doubled consonants)** — draw the same consonant **twice**: `ㄱㄱ → ㄲ`, `ㄷㄷ → ㄸ`,
+  `ㅂㅂ → ㅃ`, `ㅅㅅ → ㅆ`, `ㅈㅈ → ㅉ`. A doubled consonant is a **stronger** version of its spell.
+- **복합 모음 (compound vowels)** — draw two vowels in a row: `ㅗ + ㅏ → ㅘ`, `ㅏ + ㅣ → ㅐ`,
+  `ㅜ + ㅓ → ㅝ`, `ㅡ + ㅣ → ㅢ`, … (two-step ones like `ㅘ + ㅣ → ㅙ` chain naturally). Compound
+  vowels are the strongest delivery shapes.
+
+So you can spell anything — `까`, `과`, `의`, `뭐`, `깎` — and the on-screen indicator shows the
+block assembling, with a `쌍 ㄲ!` / `조합 ㅘ!` flash when a merge happens.
+
 ### Two ways to draw
 
 - **Quick draw** (default): draw a stroke and it commits after a short pause — fast for single
   letters and quick combos.
 - **✍️ 모아 그리기 (Hold draw)**: tap the button to compose with **no time limit** — draw every
   stroke of a long syllable (great for `건`, `혈`) at your own pace, then tap **✨ 시전** to fire.
+- **✕**: clears the syllable you're drawing if you make a mistake.
+
+## Quality-of-life
+
+- **⏸ Pause** button, and the game **auto-pauses** when the tab/app is backgrounded so your gate
+  isn't destroyed while you're away.
+- **👹 남은** counter shows how many enemies remain in the wave.
+- **Haptics** (where supported): subtle vibration on cast, on a letter merge, and a stronger one
+  when the gate is hit.
+- **Low-ink warning**: the 먹 bar flashes when you try to cast without enough ink.
+- **📖 마법서** menu keeps the full ink/effect reference off the play field (자음 / 모음 / 조합 tabs).
+- Progress (gold + upgrades) **auto-saves**; the spellbook lists every letter so nothing is hidden.
 
 A few real Korean words are **hidden signature spells**: spell out **불** (ㅂㅜㄹ, "fire") for
 지옥불, **물** (ㅁㅜㄹ, "water") for 해일, **산** (ㅅㅏㄴ, "mountain") for 산사태 — each with a

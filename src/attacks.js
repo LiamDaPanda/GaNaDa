@@ -251,9 +251,42 @@ export const VOWELS = {
     jamo: 'ㅠ', name: '운석우', kind: 'meteor', dmgMul: 3.3, manaCost: 20, radiusMul: 2.1,
     desc: '초대형 운석 강타 (강)',
   },
+  // Compound vowels (복합 모음) — drawn by combining two vowels (ㅏ+ㅣ=ㅐ,
+  // ㅗ+ㅏ=ㅘ …). They are the strongest delivery shapes.
+  ae: { jamo: 'ㅐ', name: '겹창', kind: 'lance', dmgMul: 2.6, manaCost: 16, radiusMul: 1, desc: 'ㅏ+ㅣ · 강화 관통' },
+  yae: { jamo: 'ㅒ', name: '삼중창', kind: 'lance', dmgMul: 3.1, manaCost: 20, radiusMul: 1, desc: 'ㅑ+ㅣ · 초강화 관통' },
+  e: { jamo: 'ㅔ', name: '겹소용돌이', kind: 'aoe', dmgMul: 2.2, manaCost: 16, radiusMul: 1.9, desc: 'ㅓ+ㅣ · 광역 폭발' },
+  ye: { jamo: 'ㅖ', name: '삼중소용돌이', kind: 'aoe', dmgMul: 2.7, manaCost: 20, radiusMul: 2.2, desc: 'ㅕ+ㅣ · 초광역 폭발' },
+  wa: { jamo: 'ㅘ', name: '폭풍운석', kind: 'meteor', dmgMul: 2.9, manaCost: 20, radiusMul: 1.9, desc: 'ㅗ+ㅏ · 폭풍 운석' },
+  wae: { jamo: 'ㅙ', name: '대폭풍운석', kind: 'meteor', dmgMul: 3.4, manaCost: 24, radiusMul: 2.1, desc: 'ㅘ+ㅣ · 초대형 운석' },
+  oe: { jamo: 'ㅚ', name: '회전우', kind: 'rain', dmgMul: 1.9, manaCost: 18, radiusMul: 1, count: 9, desc: 'ㅗ+ㅣ · 회전 폭우' },
+  wo: { jamo: 'ㅝ', name: '심연운석', kind: 'meteor', dmgMul: 3.1, manaCost: 22, radiusMul: 2.0, desc: 'ㅜ+ㅓ · 심연 운석' },
+  we: { jamo: 'ㅞ', name: '대심연운석', kind: 'meteor', dmgMul: 3.5, manaCost: 26, radiusMul: 2.2, desc: 'ㅝ+ㅣ · 초대형 운석' },
+  wi: { jamo: 'ㅟ', name: '나선운석', kind: 'meteor', dmgMul: 2.8, manaCost: 20, radiusMul: 1.9, desc: 'ㅜ+ㅣ · 나선 운석' },
+  ui: { jamo: 'ㅢ', name: '현파동', kind: 'sweep', dmgMul: 2.4, manaCost: 18, radiusMul: 1, desc: 'ㅡ+ㅣ · 강화 파동' },
 };
 
-export const VOWEL_ORDER = ['a', 'ya', 'eo', 'yeo', 'o', 'yo', 'u', 'yu', 'eu', 'i'];
+export const VOWEL_ORDER = [
+  'a', 'ya', 'eo', 'yeo', 'o', 'yo', 'u', 'yu', 'eu', 'i',
+  'ae', 'yae', 'e', 'ye', 'wa', 'wae', 'oe', 'wo', 'we', 'wi', 'ui',
+];
+
+// Doubled consonants (쌍자음) — drawn by repeating the consonant (ㄱㄱ=ㄲ).
+// Each is a powered-up version of its base consonant's spell.
+export const DOUBLE_OF = { giyeok: 'ggiyeok', digeut: 'ddigeut', bieup: 'bbieup', siot: 'ssiot', jieut: 'jjieut' };
+export const BASE_OF = { ggiyeok: 'giyeok', ddigeut: 'digeut', bbieup: 'bieup', ssiot: 'siot', jjieut: 'jieut' };
+const DOUBLE_JAMO = { ggiyeok: 'ㄲ', ddigeut: 'ㄸ', bbieup: 'ㅃ', ssiot: 'ㅆ', jjieut: 'ㅉ' };
+const DOUBLE_MUL = 1.6;   // damage multiplier for a doubled consonant
+const DOUBLE_MANA = 1.4;  // mana multiplier
+
+// Compound-vowel combine table: current jung + added base vowel → compound.
+// Two-step compounds (ㅙ=ㅘ+ㅣ, ㅞ=ㅝ+ㅣ) chain naturally.
+export const COMBINE_VOWEL = {
+  'a,i': 'ae', 'ya,i': 'yae', 'eo,i': 'e', 'yeo,i': 'ye',
+  'o,a': 'wa', 'o,i': 'oe', 'wa,i': 'wae',
+  'u,eo': 'wo', 'u,i': 'wi', 'wo,i': 'we',
+  'eu,i': 'ui',
+};
 
 // Korean element display names (for composed spell labels).
 export const ELEMENT_NAME = {
@@ -265,24 +298,35 @@ export const ELEMENT_NAME = {
 // --- Hangul composition: build the precomposed syllable character so the HUD
 // can show "가" assembling in real time. Indices follow Unicode U+AC00 rules.
 const CHO_INDEX = {
-  giyeok: 0, nieun: 2, digeut: 3, rieul: 5, mieum: 6, bieup: 7, siot: 9,
-  ieung: 11, jieut: 12, chieut: 14, kieuk: 15, tieut: 16, pieup: 17, hieut: 18,
+  giyeok: 0, ggiyeok: 1, nieun: 2, digeut: 3, ddigeut: 4, rieul: 5, mieum: 6,
+  bieup: 7, bbieup: 8, siot: 9, ssiot: 10, ieung: 11, jieut: 12, jjieut: 13,
+  chieut: 14, kieuk: 15, tieut: 16, pieup: 17, hieut: 18,
 };
 const JUNG_INDEX = {
-  a: 0, ya: 2, eo: 4, yeo: 6, o: 8, yo: 12, u: 13, yu: 17, eu: 18, i: 20,
+  a: 0, ae: 1, ya: 2, yae: 3, eo: 4, e: 5, yeo: 6, ye: 7, o: 8, wa: 9, wae: 10,
+  oe: 11, yo: 12, u: 13, wo: 14, we: 15, wi: 16, yu: 17, eu: 18, ui: 19, i: 20,
 };
 const JONG_INDEX = {
-  giyeok: 1, nieun: 4, digeut: 7, rieul: 8, mieum: 16, bieup: 17, siot: 19,
-  ieung: 21, jieut: 22, chieut: 23, kieuk: 24, tieut: 25, pieup: 26, hieut: 27,
+  giyeok: 1, ggiyeok: 2, nieun: 4, digeut: 7, rieul: 8, mieum: 16, bieup: 17,
+  siot: 19, ssiot: 20, ieung: 21, jieut: 22, chieut: 23, kieuk: 24, tieut: 25,
+  pieup: 26, hieut: 27,
 };
+
+// Display glyph for any jamo id (base, doubled, or compound).
+export function jamoChar(id) {
+  if (ATTACKS[id]) return ATTACKS[id].jamo;
+  if (VOWELS[id]) return VOWELS[id].jamo;
+  if (DOUBLE_JAMO[id]) return DOUBLE_JAMO[id];
+  return '';
+}
 
 export function composeSyllable(jamos) {
   if (jamos.length === 0) return '';
   const cho = CHO_INDEX[jamos[0]];
-  if (cho == null) return ATTACKS[jamos[0]]?.jamo || '';
-  if (jamos.length === 1) return ATTACKS[jamos[0]].jamo;
+  if (cho == null) return jamoChar(jamos[0]);
+  if (jamos.length === 1) return jamoChar(jamos[0]);
   const jung = JUNG_INDEX[jamos[1]];
-  if (jung == null) return ATTACKS[jamos[0]].jamo;
+  if (jung == null) return jamoChar(jamos[0]);
   const jong = jamos.length >= 3 ? (JONG_INDEX[jamos[2]] ?? 0) : 0;
   return String.fromCharCode(0xac00 + (cho * 21 + jung) * 28 + jong);
 }
@@ -298,14 +342,33 @@ export const NAMED_SYLLABLES = {
   '가': { name: '낙뢰참', bonus: 1.2 },                    // your example, ㄱㅏ
 };
 
+// Resolve a consonant id (possibly doubled) to its base spell + power factors.
+function resolveConsonant(id) {
+  const base = BASE_OF[id] || id;
+  const atk = ATTACKS[base];
+  if (!atk) return null;
+  const doubled = !!BASE_OF[id];
+  return { atk, doubled, dmgK: doubled ? DOUBLE_MUL : 1, manaK: doubled ? DOUBLE_MANA : 1 };
+}
+
 // Build a castable spell object from a sequence of jamo ids.
-// 1 jamo  → basic consonant spell.
+// 1 jamo  → basic consonant spell (doubled = a stronger version).
 // 2 jamo  → consonant element shaped by the vowel (a syllable).
 // 3 jamo  → 받침 fusion: a screen-shaking ultimate.
 export function buildSyllableSpell(jamos) {
-  const C = ATTACKS[jamos[0]];
-  if (!C) return null;
-  if (jamos.length === 1) return C;
+  const cInfo = resolveConsonant(jamos[0]);
+  if (!cInfo) return null;
+  const C = cInfo.atk;
+
+  if (jamos.length === 1) {
+    if (!cInfo.doubled) return C;
+    // a lone doubled consonant: a powered-up version of the base spell
+    return {
+      ...C, composed: true, char: jamoChar(jamos[0]), jamo: jamoChar(jamos[0]),
+      jamos: jamos.slice(), name: `${jamoChar(jamos[0])} · 쌍${C.name}`,
+      manaCost: Math.round(C.manaCost * cInfo.manaK), baseDamage: C.baseDamage * cInfo.dmgK,
+    };
+  }
 
   const V = VOWELS[jamos[1]];
   if (!V) return C;
@@ -313,17 +376,19 @@ export function buildSyllableSpell(jamos) {
   const char = composeSyllable(jamos);
   const elName = ELEMENT_NAME[C.element] || C.name;
   const isUltimate = jamos.length >= 3;
-  const C2 = isUltimate ? ATTACKS[jamos[2]] : null;
+  const c2Info = isUltimate ? resolveConsonant(jamos[2]) : null;
+  const C2 = c2Info ? c2Info.atk : null;
 
   let dmgMul = V.dmgMul;
-  let manaCost = C.manaCost + V.manaCost;
+  let manaCost = Math.round(C.manaCost * cInfo.manaK) + V.manaCost;
   let kind = V.kind;
   let radius = (C.radius || 120) * V.radiusMul;
 
   if (isUltimate && C2) {
     // Third jamo (받침) fuses both consonants into a field-wide ultimate.
     dmgMul = V.dmgMul + 2.0;
-    manaCost = C.manaCost + V.manaCost + C2.manaCost + 8;
+    manaCost = Math.round(C.manaCost * cInfo.manaK) + V.manaCost
+      + Math.round(C2.manaCost * c2Info.manaK) + 8;
     kind = 'ultimate';
     radius = 999;
   }
@@ -338,7 +403,7 @@ export function buildSyllableSpell(jamos) {
     color: C.color,
     glow: C.glow,
     manaCost,
-    baseDamage: C.baseDamage * dmgMul,
+    baseDamage: C.baseDamage * cInfo.dmgK * dmgMul,
     radius,
     kind,
     knockback: C.knockback,

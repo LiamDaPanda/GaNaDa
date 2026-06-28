@@ -1,5 +1,8 @@
 // ui.js — DOM HUD, spellbook, upgrade shop, drawing controls, overlays.
-import { ATTACKS, ATTACK_ORDER, VOWELS, VOWEL_ORDER, ELEMENT_NAME, composeSyllable } from './attacks.js';
+import {
+  ATTACKS, ATTACK_ORDER, VOWELS, VOWEL_ORDER,
+  composeSyllable, buildSyllableSpell,
+} from './attacks.js';
 import { UPGRADES, UPGRADE_ORDER } from './upgrades.js';
 
 export class UI {
@@ -13,6 +16,10 @@ export class UI {
       gateText: document.getElementById('gateText'),
       manaFill: document.getElementById('manaFill'),
       manaText: document.getElementById('manaText'),
+      manaBar: document.querySelector('.bar.mana'),
+      enemiesLeft: document.getElementById('enemiesLeft'),
+      pauseOverlay: document.getElementById('pauseOverlay'),
+      pauseToggle: document.getElementById('pauseToggle'),
       banner: document.getElementById('banner'),
       shop: document.getElementById('shop'),
       spellbook: document.getElementById('spellbook'),
@@ -56,6 +63,11 @@ export class UI {
     // Drawing controls
     this.el.holdBtn.addEventListener('click', () => game.beginHold());
     this.el.castBtn.addEventListener('click', () => game.castComposed());
+    document.getElementById('clearBtn').addEventListener('click', () => game.clearCompose());
+
+    // Pause: button + tapping the overlay resumes
+    this.el.pauseToggle.addEventListener('click', () => game.togglePause());
+    this.el.pauseOverlay.addEventListener('click', () => game.togglePause());
 
     document.getElementById('restartBtn').addEventListener('click', () => game.restart());
     const sound = document.getElementById('soundToggle');
@@ -73,6 +85,11 @@ export class UI {
     this.el.holdBtn.classList.toggle('active', on);
     this.el.holdBtn.textContent = on ? '✍️ 그리는 중…' : '✍️ 모아 그리기';
     this.el.castBtn.classList.toggle('ready', on);
+  }
+
+  setPaused(on) {
+    this.el.pauseOverlay.classList.toggle('show', on);
+    this.el.pauseToggle.textContent = on ? '▶' : '⏸';
   }
 
   buildSpellbook() {
@@ -93,21 +110,28 @@ export class UI {
         body.appendChild(rowEl(v.jamo, '#9fe3ff', v.name, v.desc, `+먹 ${v.manaCost}`));
       }
     } else {
-      const examples = [
-        ['giyeok', 'a'], ['siot', 'a', 'nieun'], ['bieup', 'u', 'rieul'],
-        ['mieum', 'u', 'rieul'], ['giyeok', 'eo', 'nieun'], ['hieut', 'yeo', 'rieul'],
-        ['ieung', 'yo'], ['rieul', 'ya'],
-      ];
       const note = document.createElement('p');
       note.className = 'book-note';
-      note.innerHTML = '자음+모음(+받침)을 이어 그려 글자를 완성하세요. 글자가 길수록 강력!';
+      note.innerHTML =
+        '자음+모음(+받침)을 이어 그려 글자를 완성하세요. 글자가 길수록 강력!<br>' +
+        '<b>쌍자음</b>: 같은 자음을 두 번 (ㄱㄱ=<b>ㄲ</b>) → 강화 마법.<br>' +
+        '<b>복합 모음</b>: 모음을 이어서 (ㅗ+ㅏ=<b>ㅘ</b>, ㅏ+ㅣ=<b>ㅐ</b>).';
       body.appendChild(note);
-      for (const jamos of examples) {
-        const char = composeSyllable(jamos);
-        const cons = ATTACKS[jamos[0]];
-        const seq = jamos.map((j) => (ATTACKS[j] || VOWELS[j]).jamo).join(' + ');
-        const tier = jamos.length >= 3 ? '융합 궁극기' : '조합 마법';
-        body.appendChild(rowEl(char, cons.color, `${seq}`, `${ELEMENT_NAME[cons.element] || ''} 계열 · ${tier}`, ''));
+      // each example: combined jamo ids (what gets cast) + a "draw this" hint
+      const examples = [
+        { j: ['giyeok', 'a'], draw: 'ㄱ + ㅏ' },
+        { j: ['ggiyeok', 'a'], draw: 'ㄱ ㄱ + ㅏ (쌍)' },
+        { j: ['siot', 'a', 'nieun'], draw: 'ㅅ + ㅏ + ㄴ' },
+        { j: ['bieup', 'u', 'rieul'], draw: 'ㅂ + ㅜ + ㄹ' },
+        { j: ['giyeok', 'eo', 'nieun'], draw: 'ㄱ + ㅓ + ㄴ' },
+        { j: ['hieut', 'yeo', 'rieul'], draw: 'ㅎ + ㅕ + ㄹ' },
+        { j: ['giyeok', 'wa'], draw: 'ㄱ + ㅗ ㅏ (ㅘ)' },
+        { j: ['ieung', 'ui'], draw: 'ㅇ + ㅡ ㅣ (ㅢ)' },
+      ];
+      for (const ex of examples) {
+        const char = composeSyllable(ex.j);
+        const spell = buildSyllableSpell(ex.j);
+        body.appendChild(rowEl(char, spell.color || '#fff', ex.draw, spell.name || '', `먹 ${spell.manaCost}`));
       }
     }
   }
@@ -134,11 +158,12 @@ export class UI {
     this.bannerTimer = setTimeout(() => b.classList.remove('show'), 1800);
   }
 
-  updateHUD(s, best) {
+  updateHUD(s, best, enemiesLeft = 0, lowInk = false) {
     this.el.wave.textContent = s.wave;
     this.el.gold.textContent = Math.floor(s.gold);
     this.el.score.textContent = s.score;
     this.el.best.textContent = best || 1;
+    this.el.enemiesLeft.textContent = enemiesLeft;
     const gf = Math.max(0, s.gateHp / s.gateMax);
     this.el.gateFill.style.width = `${gf * 100}%`;
     this.el.gateFill.style.background = `hsl(${gf * 120}, 80%, 50%)`;
@@ -146,6 +171,7 @@ export class UI {
     const mf = s.mana / s.manaMax;
     this.el.manaFill.style.width = `${mf * 100}%`;
     this.el.manaText.textContent = `${Math.floor(s.mana)}/${s.manaMax}`;
+    this.el.manaBar.classList.toggle('low', lowInk);
     // keep shop affordability live if open
     if (this.el.shop.classList.contains('open')) this.updateShopAffordability();
   }

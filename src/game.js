@@ -1,6 +1,9 @@
 // game.js — main loop, state, spawning, input, rendering.
 import { buildRecognizer } from './recognizer.js';
-import { ATTACKS, buildSyllableSpell, composeSyllable, expectedCategory } from './attacks.js';
+import {
+  ATTACKS, buildSyllableSpell, composeSyllable, jamoChar,
+  DOUBLE_OF, COMBINE_VOWEL,
+} from './attacks.js';
 import { Enemy, Projectile, Particle, FloatingText } from './entities.js';
 import { Audio } from './audio.js';
 import { drawDokkaebi, drawGate, drawBackground } from './render.js';
@@ -36,7 +39,10 @@ export class Game {
     this.gateX = 0;
     this.lastTime = 0;
     this.paused = false;
+    this.manualPause = false;  // paused via the button (vs. auto-pause)
     this.gameOver = false;
+    this.haptic = true;        // navigator.vibrate feedback
+    this.lowInkFlash = 0;
 
     this.state = this.freshState();
     this.load();
@@ -48,8 +54,37 @@ export class Game {
 
     this.bindInput();
     window.addEventListener('resize', () => this.resize());
+    // QoL: auto-pause when the tab/app is backgrounded so the gate survives.
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) this.paused = true;
+      else if (!this.manualPause && !this.gameOver) this.paused = false;
+    });
     this.resize();
     this.startWave();
+  }
+
+  togglePause() {
+    if (this.gameOver) return;
+    this.manualPause = !this.manualPause;
+    this.paused = this.manualPause;
+    if (this.ui) this.ui.setPaused(this.paused);
+  }
+
+  // ✕ — discard the syllable currently being drawn.
+  clearCompose() {
+    this.compose = { jamos: [], timer: 0, x: this.W / 2, y: this.H * 0.2 };
+    this.holdMode = false;
+    if (this.ui) this.ui.setHold(false);
+    Audio.miss();
+  }
+
+  buzz(ms) {
+    if (this.haptic) navigator.vibrate?.(ms);
+  }
+
+  enemiesRemaining() {
+    const queued = this.waveActive ? (this.spawnQueue.length - this.spawnIndex) : 0;
+    return this.enemies.length + Math.max(0, queued);
   }
 
   freshState() {
@@ -198,12 +233,15 @@ export class Game {
     if (!atk) return false;
     if (this.state.mana < atk.manaCost) {
       Audio.miss();
+      this.lowInkFlash = 0.6;
+      this.buzz([10, 40, 10]);
       this.texts.push(new FloatingText(this.W / 2, this.H * 0.5, '먹이 부족!', '#ff8080', 22));
       return false;
     }
     this.state.mana -= atk.manaCost;
     const dmg = atk.baseDamage * this.state.powerMul;
     Audio.cast(atk.element);
+    this.buzz(atk.kind === 'ultimate' || atk.kind === 'beam' ? 30 : 14);
 
     const origin = { x: this.gateX, y: this.laneY - 30 };
 
@@ -468,34 +506,62 @@ export class Game {
   finishStroke() {
     if (this.stroke.length < 4) { this.stroke = []; return; }
     const last = this.stroke[this.stroke.length - 1];
-    const ACCEPT = 0.68;
-    const pos = this.compose.jamos.length; // 0 초성, 1 중성, 2 종성
-    const cat = expectedCategory(pos);
-    const res = this.recognizer.recognize(this.stroke, cat);
-
-    if (res.id && res.score >= ACCEPT) {
-      this.addJamo(res.id, last);
-    } else if (pos > 0) {
-      // Wanted a vowel/받침 but it didn't fit — cast what we have so far, then
-      // try this stroke as the start of a brand-new syllable.
-      this.commitSyllable();
-      const r2 = this.recognizer.recognize(this.stroke, 'consonant');
-      if (r2.id && r2.score >= ACCEPT) this.addJamo(r2.id, last);
-      else this.missStroke(last);
-    } else {
-      this.missStroke(last);
-    }
+    if (!this.addStroke(this.stroke, last)) this.missStroke(last);
     this.stroke = [];
   }
 
-  addJamo(id, at) {
-    this.compose.jamos.push(id);
+  // Feed one drawn stroke into the syllable being composed, handling doubled
+  // consonants (ㄱㄱ→ㄲ) and compound vowels (ㅗ+ㅏ→ㅘ) the way Hangul does.
+  // Returns true if the stroke was consumed.
+  addStroke(stroke, at) {
+    const ACCEPT = 0.68;
+    const j = this.compose.jamos;
+    const rc = this.recognizer.recognize(stroke, 'consonant');
+    const rv = this.recognizer.recognize(stroke, 'vowel');
+
+    if (j.length === 0) {
+      // 초성 — must be a consonant
+      if (rc.id && rc.score >= ACCEPT) return this.addJamo(rc.id, at);
+      return false;
+    }
+
+    if (j.length === 1) {
+      // after 초성: a vowel (중성), or the same consonant again → doubled 쌍자음
+      const dbl = DOUBLE_OF[j[0]];
+      if (dbl && rc.id === j[0] && rc.score >= ACCEPT && rc.score >= rv.score) {
+        j[0] = dbl;
+        return this.addJamo(null, at, `쌍 ${jamoChar(dbl)}!`);
+      }
+      if (rv.id && rv.score >= ACCEPT && rv.score >= rc.score) return this.addJamo(rv.id, at);
+      if (rc.id && rc.score >= ACCEPT) { // a different consonant → new syllable
+        this.commitSyllable();
+        return this.addJamo(rc.id, at);
+      }
+      return false;
+    }
+
+    // j.length === 2 — after 초성+중성: a compound vowel, or a 종성 consonant
+    const comb = rv.id && COMBINE_VOWEL[`${j[1]},${rv.id}`];
+    if (comb && rv.score >= ACCEPT && rv.score >= rc.score) {
+      j[1] = comb;
+      return this.addJamo(null, at, `조합 ${jamoChar(comb)}!`);
+    }
+    if (rc.id && rc.score >= ACCEPT) return this.addJamo(rc.id, at); // 받침
+    return false;
+  }
+
+  // Push (or, when id is null, merge-in-place) a jamo into the buffer.
+  addJamo(id, at, toast = null) {
+    if (id !== null) this.compose.jamos.push(id);
     this.compose.timer = this.COMPOSE_WINDOW;
     this.compose.x = at.x;
     this.compose.y = at.y;
     Audio.compose(this.compose.jamos.length);
+    this.buzz(toast ? 18 : 8);
+    if (toast) this.texts.push(new FloatingText(this.W / 2, this.H * 0.27, toast, '#ffd23d', 20));
     // a full syllable block (초성+중성+종성) fires at once
     if (this.compose.jamos.length >= 3) this.commitSyllable();
+    return true;
   }
 
   commitSyllable() {
@@ -601,6 +667,7 @@ export class Game {
         this.state.gateHp -= e.damage;
         this.shake = Math.min(20, this.shake + 6);
         Audio.gateHit();
+        this.buzz(this.state.gateHp <= 0 ? 120 : 25);
         this.spawnBurst(this.gateX + 10, e.y, '#ff6b4a', 14);
         e.dead = true;
         if (this.state.gateHp <= 0) {
@@ -620,8 +687,9 @@ export class Game {
     this.texts = this.texts.filter((t) => !t.dead);
 
     if (this.shake > 0) this.shake = Math.max(0, this.shake - dt * 40);
+    if (this.lowInkFlash > 0) this.lowInkFlash -= dt;
 
-    this.ui.updateHUD(this.state, this.bestWave);
+    this.ui.updateHUD(this.state, this.bestWave, this.enemiesRemaining(), this.lowInkFlash > 0);
   }
 
   triggerGameOver() {
