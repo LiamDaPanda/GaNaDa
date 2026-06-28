@@ -20,6 +20,10 @@ export class UI {
       enemiesLeft: document.getElementById('enemiesLeft'),
       pauseOverlay: document.getElementById('pauseOverlay'),
       pauseToggle: document.getElementById('pauseToggle'),
+      tutorial: document.getElementById('tutorial'),
+      tutCount: document.getElementById('tutCount'),
+      tutTitle: document.getElementById('tutTitle'),
+      tutDetail: document.getElementById('tutDetail'),
       banner: document.getElementById('banner'),
       shop: document.getElementById('shop'),
       spellbook: document.getElementById('spellbook'),
@@ -69,6 +73,8 @@ export class UI {
     this.el.pauseToggle.addEventListener('click', () => game.togglePause());
     this.el.pauseOverlay.addEventListener('click', () => game.togglePause());
 
+    document.getElementById('tutSkip').addEventListener('click', () => game.endTutorial(true));
+
     document.getElementById('restartBtn').addEventListener('click', () => game.restart());
     const sound = document.getElementById('soundToggle');
     sound.addEventListener('click', () => {
@@ -90,6 +96,17 @@ export class UI {
   setPaused(on) {
     this.el.pauseOverlay.classList.toggle('show', on);
     this.el.pauseToggle.textContent = on ? '▶' : '⏸';
+  }
+
+  showTutorial(step, idx, total) {
+    this.el.tutCount.textContent = `연습 ${idx + 1}/${total}`;
+    this.el.tutTitle.textContent = step.title;
+    this.el.tutDetail.textContent = step.detail;
+    this.el.tutorial.classList.add('show');
+  }
+
+  hideTutorial() {
+    this.el.tutorial.classList.remove('show');
   }
 
   buildSpellbook() {
@@ -210,10 +227,10 @@ export class UI {
     });
   }
 
-  showGameOver(s, best) {
+  showGameOver(s, best, bestCombo = 0) {
     this.el.goStats.innerHTML =
       `도달 물결 <b>${s.wave}</b> · 점수 <b>${s.score}</b> · 처치 <b>${s.kills}</b><br>` +
-      `최고 기록 <b>${best || s.wave}</b>물결`;
+      `최고 콤보 <b>${bestCombo}</b> · 최고 기록 <b>${best || s.wave}</b>물결`;
     this.el.gameOver.classList.add('show');
   }
 

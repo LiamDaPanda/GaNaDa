@@ -11,12 +11,15 @@ function boot() {
   game.start();
   window.__game = game; // exposed for debugging / automated smoke tests
 
-  // Hide the title screen on first interaction.
+  // Hide the title screen on first interaction; coach new players once.
   const title = document.getElementById('title');
+  let firstRun = false;
+  try { firstRun = !localStorage.getItem('ganada_tutorial_done'); } catch (e) { /* ignore */ }
   const dismiss = () => {
     Audio.unlock();
     title.classList.add('hidden');
     window.removeEventListener('pointerdown', dismiss);
+    if (firstRun) game.startTutorial();
   };
   document.getElementById('startBtn').addEventListener('click', dismiss);
 

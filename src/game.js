@@ -2,7 +2,7 @@
 import { buildRecognizer } from './recognizer.js';
 import {
   ATTACKS, buildSyllableSpell, composeSyllable, jamoChar,
-  DOUBLE_OF, COMBINE_VOWEL,
+  DOUBLE_OF, COMBINE_VOWEL, COMBINE_JONG,
 } from './attacks.js';
 import { Enemy, Projectile, Particle, FloatingText } from './entities.js';
 import { Audio } from './audio.js';
@@ -10,6 +10,12 @@ import { drawDokkaebi, drawGate, drawBackground } from './render.js';
 import { UPGRADES } from './upgrades.js';
 
 const SAVE_KEY = 'ganada_save_v1';
+
+const TUTORIAL_STEPS = [
+  { title: 'ㄱ + ㅏ = 가', detail: 'ㄱ(┐)을 그린 뒤 이어서 ㅏ(⊢)를 그려 \'가\'를 시전하세요.', target: '가' },
+  { title: 'ㄱ ㄱ + ㅏ = 까', detail: '같은 자음을 두 번 그리면 쌍자음! ㄱㄱ으로 ㄲ을 만들어 \'까\'.', target: '까' },
+  { title: 'ㄱ + ㅗ ㅏ = 과', detail: '모음을 이어 그리면 복합 모음! ㅗ 다음 ㅏ = ㅘ → \'과\'.', target: '과' },
+];
 
 export class Game {
   constructor(canvas, ui) {
@@ -43,6 +49,14 @@ export class Game {
     this.gameOver = false;
     this.haptic = true;        // navigator.vibrate feedback
     this.lowInkFlash = 0;
+
+    // combo: chain kills before the window lapses for a score multiplier
+    this.combo = 0;
+    this.comboTimer = 0;
+    this.bestCombo = 0;
+    this.COMBO_WINDOW = 2.6;
+
+    this.tutorial = { active: false, step: 0 };
 
     this.state = this.freshState();
     this.load();
@@ -442,13 +456,27 @@ export class Game {
     if (e.dead) this.onKill(e);
   }
 
+  comboMult() {
+    return Math.min(4, 1 + Math.floor(this.combo / 4) * 0.25);
+  }
+
   onKill(e) {
+    // chain the combo and apply its score multiplier
+    this.combo++;
+    this.comboTimer = this.COMBO_WINDOW;
+    this.bestCombo = Math.max(this.bestCombo, this.combo);
+    const mult = this.comboMult();
+
     this.state.gold += e.gold;
     this.state.kills++;
-    this.state.score += Math.round(e.maxHp);
+    this.state.score += Math.round(e.maxHp * mult);
     Audio.enemyDie();
     this.spawnBurst(e.x, e.y, e.def.color, e.def.boss ? 50 : 18);
     this.texts.push(new FloatingText(e.x, e.y - 10, `+${e.gold}💰`, '#ffd966', 16));
+    if (this.combo > 1 && this.combo % 5 === 0) {
+      this.texts.push(new FloatingText(this.W / 2, this.H * 0.42, `${this.combo} 콤보! x${mult.toFixed(2)}`, '#ffd23d', 24));
+      this.buzz(12);
+    }
     if (e.def.boss) this.shake = Math.min(28, this.shake + 16);
   }
 
@@ -540,13 +568,33 @@ export class Game {
       return false;
     }
 
-    // j.length === 2 — after 초성+중성: a compound vowel, or a 종성 consonant
-    const comb = rv.id && COMBINE_VOWEL[`${j[1]},${rv.id}`];
-    if (comb && rv.score >= ACCEPT && rv.score >= rc.score) {
-      j[1] = comb;
-      return this.addJamo(null, at, `조합 ${jamoChar(comb)}!`);
+    if (j.length === 2) {
+      // after 초성+중성: a compound vowel, or a 종성 consonant
+      const comb = rv.id && COMBINE_VOWEL[`${j[1]},${rv.id}`];
+      if (comb && rv.score >= ACCEPT && rv.score >= rc.score) {
+        j[1] = comb;
+        return this.addJamo(null, at, `조합 ${jamoChar(comb)}!`);
+      }
+      if (rc.id && rc.score >= ACCEPT) return this.addJamo(rc.id, at); // 받침
+      return false;
     }
-    if (rc.id && rc.score >= ACCEPT) return this.addJamo(rc.id, at); // 받침
+
+    // j.length === 3 (reachable in hold mode): extend the 받침 into a 겹받침
+    // (ㄹ+ㄱ→ㄺ) or a doubled final, otherwise commit and begin a new syllable.
+    const dblJong = DOUBLE_OF[j[2]];
+    if (dblJong && rc.id === j[2] && rc.score >= ACCEPT && rc.score >= rv.score) {
+      j[2] = dblJong;
+      return this.addJamo(null, at, `받침 ${jamoChar(dblJong)}!`);
+    }
+    const cluster = rc.id && COMBINE_JONG[`${j[2]},${rc.id}`];
+    if (cluster && rc.score >= ACCEPT && rc.score >= rv.score) {
+      j[2] = cluster;
+      return this.addJamo(null, at, `겹받침 ${jamoChar(cluster)}!`);
+    }
+    if (rc.id && rc.score >= ACCEPT) {
+      this.commitSyllable();
+      return this.addJamo(rc.id, at);
+    }
     return false;
   }
 
@@ -559,17 +607,64 @@ export class Game {
     Audio.compose(this.compose.jamos.length);
     this.buzz(toast ? 18 : 8);
     if (toast) this.texts.push(new FloatingText(this.W / 2, this.H * 0.27, toast, '#ffd23d', 20));
-    // a full syllable block (초성+중성+종성) fires at once
-    if (this.compose.jamos.length >= 3) this.commitSyllable();
+    // In quick mode a full 3-jamo block fires at once; in hold mode it waits
+    // so a 4th stroke can extend the 받침 into a 겹받침.
+    if (!this.holdMode && this.compose.jamos.length >= 3) this.commitSyllable();
     return true;
   }
 
   commitSyllable() {
     const jamos = this.compose.jamos;
     if (jamos.length === 0) return;
+    const char = composeSyllable(jamos);
     const spell = buildSyllableSpell(jamos);
     this.compose = { jamos: [], timer: 0, x: this.compose.x, y: this.compose.y };
     if (spell) this.castSpell(spell, jamos[0]);
+    if (this.tutorial && this.tutorial.active) this.tutorialCheck(char);
+  }
+
+  // ---- first-run tutorial: walks through 가 → 까 → 과 ----------------------
+  startTutorial() {
+    this.tutorial = { active: true, step: 0 };
+    this.waveActive = false;
+    this.spawnQueue = [];
+    this.enemies = [];
+    this.combo = 0;
+    this.state.mana = this.state.manaMax;
+    this.spawnTutorialDummies();
+    this.ui.showTutorial(TUTORIAL_STEPS[0], 0, TUTORIAL_STEPS.length);
+  }
+
+  spawnTutorialDummies() {
+    for (let i = 0; i < 3; i++) {
+      const e = new Enemy('blue', this.W * 0.58 + i * 64, this.laneY - 6 + (i % 2 ? 18 : -18), 1, 1);
+      e.baseSpeed = 0; // stationary practice targets
+      this.enemies.push(e);
+    }
+  }
+
+  tutorialCheck(char) {
+    const step = TUTORIAL_STEPS[this.tutorial.step];
+    if (char !== step.target) return;
+    this.tutorial.step++;
+    this.buzz(20);
+    if (this.tutorial.step >= TUTORIAL_STEPS.length) {
+      this.texts.push(new FloatingText(this.W / 2, this.H * 0.5, '완료! 🎉', '#ffd23d', 30));
+      this.endTutorial(false);
+    } else {
+      this.texts.push(new FloatingText(this.W / 2, this.H * 0.5, '좋아요! ✨', '#9fe3ff', 26));
+      this.ui.showTutorial(TUTORIAL_STEPS[this.tutorial.step], this.tutorial.step, TUTORIAL_STEPS.length);
+    }
+  }
+
+  endTutorial() {
+    this.tutorial = { active: false, step: 0 };
+    try { localStorage.setItem('ganada_tutorial_done', '1'); } catch (e) { /* ignore */ }
+    this.ui.hideTutorial();
+    this.enemies = [];
+    this.holdMode = false;
+    if (this.ui) this.ui.setHold(false);
+    this.startWave();
   }
 
   // "✍️ 모아 그리기" — enter hold mode and start a fresh syllable, so the
@@ -614,6 +709,8 @@ export class Game {
     this.state.gateHp = this.state.gateMax;
     this.compose = { jamos: [], timer: 0, x: 0, y: 0 };
     this.holdMode = false;
+    this.combo = 0;
+    this.comboTimer = 0;
     if (this.ui) this.ui.setHold(false);
     this.ui.hideGameOver();
     this.startWave();
@@ -632,6 +729,12 @@ export class Game {
   }
 
   update(dt) {
+    // tutorial: keep ink topped up and practice targets present
+    if (this.tutorial && this.tutorial.active) {
+      this.state.mana = this.state.manaMax;
+      if (this.enemies.length < 2) this.spawnTutorialDummies();
+    }
+
     // resources
     this.state.mana = Math.min(this.state.manaMax, this.state.mana + this.state.manaRegen * dt);
 
@@ -688,6 +791,10 @@ export class Game {
 
     if (this.shake > 0) this.shake = Math.max(0, this.shake - dt * 40);
     if (this.lowInkFlash > 0) this.lowInkFlash -= dt;
+    if (this.comboTimer > 0) {
+      this.comboTimer -= dt;
+      if (this.comboTimer <= 0) this.combo = 0;
+    }
 
     this.ui.updateHUD(this.state, this.bestWave, this.enemiesRemaining(), this.lowInkFlash > 0);
   }
@@ -696,7 +803,7 @@ export class Game {
     this.gameOver = true;
     this.shake = 26;
     this.save();
-    this.ui.showGameOver(this.state, this.bestWave);
+    this.ui.showGameOver(this.state, this.bestWave, this.bestCombo);
   }
 
   // ---- rendering -----------------------------------------------------------
@@ -747,6 +854,36 @@ export class Game {
     // syllable being composed (e.g. 가 assembling from ㄱ + ㅏ)
     if (this.compose.jamos.length > 0 || this.holdMode) this.drawCompose(ctx);
 
+    // combo counter
+    if (this.combo >= 3) this.drawCombo(ctx);
+
+    ctx.restore();
+  }
+
+  drawCombo(ctx) {
+    const mult = this.comboMult();
+    const fresh = Math.max(0, this.comboTimer / this.COMBO_WINDOW);
+    const pop = 1 + fresh * 0.12;
+    ctx.save();
+    ctx.translate(this.W - 64, this.H * 0.34);
+    ctx.scale(pop, pop);
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#ffd23d';
+    ctx.shadowColor = '#ff9c2d';
+    ctx.shadowBlur = 12;
+    ctx.font = 'bold 30px system-ui, sans-serif';
+    ctx.fillText(`${this.combo}`, 0, 0);
+    ctx.shadowBlur = 0;
+    ctx.font = 'bold 13px system-ui, sans-serif';
+    ctx.fillStyle = '#fff';
+    ctx.fillText('콤보', 0, -24);
+    ctx.fillStyle = '#9fe3ff';
+    ctx.fillText(`x${mult.toFixed(2)}`, 0, 18);
+    // draining bar
+    ctx.fillStyle = 'rgba(255,255,255,0.25)';
+    ctx.fillRect(-26, 26, 52, 4);
+    ctx.fillStyle = '#ffd23d';
+    ctx.fillRect(-26, 26, 52 * fresh, 4);
     ctx.restore();
   }
 

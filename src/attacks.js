@@ -288,6 +288,24 @@ export const COMBINE_VOWEL = {
   'eu,i': 'ui',
 };
 
+// Final-consonant clusters (겹받침): current 종성 + added consonant → cluster.
+// Doubled finals (ㄲ ㅆ) are handled by the doubling rule above.
+export const COMBINE_JONG = {
+  'giyeok,siot': 'gs', 'nieun,jieut': 'nj', 'nieun,hieut': 'nh',
+  'rieul,giyeok': 'lg', 'rieul,mieum': 'lm', 'rieul,bieup': 'lb',
+  'rieul,siot': 'ls', 'rieul,tieut': 'lt', 'rieul,pieup': 'lp',
+  'rieul,hieut': 'lh', 'bieup,siot': 'bs',
+};
+const CLUSTER_JAMO = {
+  gs: 'ㄳ', nj: 'ㄵ', nh: 'ㄶ', lg: 'ㄺ', lm: 'ㄻ', lb: 'ㄼ',
+  ls: 'ㄽ', lt: 'ㄾ', lp: 'ㄿ', lh: 'ㅀ', bs: 'ㅄ',
+};
+// First component of each cluster — used for the spell's secondary effect.
+const CLUSTER_FIRST = {
+  gs: 'giyeok', nj: 'nieun', nh: 'nieun', lg: 'rieul', lm: 'rieul', lb: 'rieul',
+  ls: 'rieul', lt: 'rieul', lp: 'rieul', lh: 'rieul', bs: 'bieup',
+};
+
 // Korean element display names (for composed spell labels).
 export const ELEMENT_NAME = {
   fire: '화염', lightning: '번개', earth: '대지', poison: '독',
@@ -307,16 +325,18 @@ const JUNG_INDEX = {
   oe: 11, yo: 12, u: 13, wo: 14, we: 15, wi: 16, yu: 17, eu: 18, ui: 19, i: 20,
 };
 const JONG_INDEX = {
-  giyeok: 1, ggiyeok: 2, nieun: 4, digeut: 7, rieul: 8, mieum: 16, bieup: 17,
-  siot: 19, ssiot: 20, ieung: 21, jieut: 22, chieut: 23, kieuk: 24, tieut: 25,
-  pieup: 26, hieut: 27,
+  giyeok: 1, ggiyeok: 2, gs: 3, nieun: 4, nj: 5, nh: 6, digeut: 7, rieul: 8,
+  lg: 9, lm: 10, lb: 11, ls: 12, lt: 13, lp: 14, lh: 15, mieum: 16, bieup: 17,
+  bs: 18, siot: 19, ssiot: 20, ieung: 21, jieut: 22, chieut: 23, kieuk: 24,
+  tieut: 25, pieup: 26, hieut: 27,
 };
 
-// Display glyph for any jamo id (base, doubled, or compound).
+// Display glyph for any jamo id (base, doubled, compound, or cluster).
 export function jamoChar(id) {
   if (ATTACKS[id]) return ATTACKS[id].jamo;
   if (VOWELS[id]) return VOWELS[id].jamo;
   if (DOUBLE_JAMO[id]) return DOUBLE_JAMO[id];
+  if (CLUSTER_JAMO[id]) return CLUSTER_JAMO[id];
   return '';
 }
 
@@ -342,8 +362,13 @@ export const NAMED_SYLLABLES = {
   '가': { name: '낙뢰참', bonus: 1.2 },                    // your example, ㄱㅏ
 };
 
-// Resolve a consonant id (possibly doubled) to its base spell + power factors.
+// Resolve a consonant id (base, doubled, or cluster) to a spell + power factors.
 function resolveConsonant(id) {
+  if (CLUSTER_FIRST[id]) {
+    // a 겹받침 contributes its first component's effect (and a small bonus)
+    const atk = ATTACKS[CLUSTER_FIRST[id]];
+    return atk ? { atk, doubled: false, dmgK: 1.15, manaK: 1.1 } : null;
+  }
   const base = BASE_OF[id] || id;
   const atk = ATTACKS[base];
   if (!atk) return null;

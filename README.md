@@ -85,6 +85,11 @@ recognition rock-solid:
 So you can spell anything — `까`, `과`, `의`, `뭐`, `깎` — and the on-screen indicator shows the
 block assembling, with a `쌍 ㄲ!` / `조합 ㅘ!` flash when a merge happens.
 
+- **겹받침 (final-consonant clusters)** — in **hold mode**, after a 받침 you can draw one more
+  consonant to form a cluster: `ㄹ + ㄱ → ㄺ`, `ㅂ + ㅅ → ㅄ`, … so words like `닭`, `값`, `삶`
+  are spellable. (Quick-draw fires a 3-jamo block immediately; hold mode is what gives you the
+  extra stroke for the cluster.)
+
 ### Two ways to draw
 
 - **Quick draw** (default): draw a stroke and it commits after a short pause — fast for single
@@ -92,6 +97,18 @@ block assembling, with a `쌍 ㄲ!` / `조합 ㅘ!` flash when a merge happens.
 - **✍️ 모아 그리기 (Hold draw)**: tap the button to compose with **no time limit** — draw every
   stroke of a long syllable (great for `건`, `혈`) at your own pace, then tap **✨ 시전** to fire.
 - **✕**: clears the syllable you're drawing if you make a mistake.
+
+## Combo
+
+Chain kills before the timer runs out to build a **combo**, which raises a **score multiplier**
+(up to ×4). The counter and multiplier show on the right; a milestone flashes every 5 kills, and
+your best combo is recorded on the game-over screen.
+
+## First-run tutorial
+
+New players get a short guided coach that walks through **가 → 까 → 과** — teaching a basic
+syllable, then a 쌍자음 (ㄱㄱ→ㄲ), then a 복합 모음 (ㅗ+ㅏ→ㅘ) — on calm practice targets. It
+advances as you draw each one, can be skipped, and only appears once.
 
 ## Quality-of-life
 

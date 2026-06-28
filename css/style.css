@@ -283,6 +283,45 @@ html, body {
 .si-desc { font-size: 11px; opacity: 0.75; }
 .si-cost { font-size: 14px; color: var(--gold); font-weight: 700; white-space: nowrap; }
 
+/* ---------- Tutorial coach ---------- */
+#tutorial {
+  position: absolute;
+  left: 12px; right: 12px;
+  top: calc(max(8px, env(safe-area-inset-top)) + 92px);
+  display: none;
+  justify-content: center;
+  z-index: 8;
+  pointer-events: none;
+}
+#tutorial.show { display: flex; }
+.tut-card {
+  background: rgba(18, 14, 28, 0.94);
+  border: 1px solid rgba(255, 217, 102, 0.5);
+  border-radius: 14px;
+  padding: 12px 14px;
+  max-width: 360px;
+  width: 100%;
+  text-align: center;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.5);
+  pointer-events: auto;
+}
+.tut-step { font-size: 11px; color: var(--gold); font-weight: 700; }
+.tut-title {
+  font-size: 22px; font-weight: 800; margin: 3px 0 4px;
+  color: #fff;
+}
+.tut-detail { font-size: 13px; opacity: 0.85; line-height: 1.4; }
+.tut-skip {
+  margin-top: 10px;
+  padding: 7px 16px;
+  font-size: 12px;
+  color: #cfc8da;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--panel-line);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
 /* ---------- Pause overlay ---------- */
 #pauseOverlay {
   position: absolute;
