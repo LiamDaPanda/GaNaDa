@@ -6,7 +6,7 @@ import {
 } from './attacks.js';
 import { Enemy, Projectile, Particle, FloatingText } from './entities.js';
 import { Audio } from './audio.js';
-import { drawDokkaebi, drawGate, drawBackground } from './render.js';
+import { drawDokkaebi, drawGate, drawBackground, brushStroke, inkBlob } from './render.js';
 import { UPGRADES } from './upgrades.js';
 
 const SAVE_KEY = 'ganada_save_v1';
@@ -945,45 +945,42 @@ export class Game {
 
   drawProjectile(ctx, p) {
     ctx.save();
+    // inky trail blobs
     for (let i = 0; i < p.trail.length; i++) {
       const a = i / p.trail.length;
-      ctx.globalAlpha = a * 0.6;
+      ctx.globalAlpha = a * 0.55;
       ctx.fillStyle = p.attack.glow;
-      ctx.beginPath();
-      ctx.arc(p.trail[i].x, p.trail[i].y, 3 + a * 4, 0, Math.PI * 2);
+      inkBlob(ctx, p.trail[i].x, p.trail[i].y, 2.5 + a * 4, i * 13 + 3, 0.5, 7);
       ctx.fill();
     }
     ctx.globalAlpha = 1;
     ctx.shadowColor = p.attack.color;
     ctx.shadowBlur = 16;
     ctx.fillStyle = p.attack.color;
-    ctx.beginPath();
-    ctx.arc(p.x, p.y, 8, 0, Math.PI * 2);
+    inkBlob(ctx, p.x, p.y, 8, (p.id || 1) * 7, 0.35, 9);
     ctx.fill();
+    ctx.shadowBlur = 0;
     ctx.fillStyle = p.attack.glow;
-    ctx.beginPath();
-    ctx.arc(p.x, p.y, 4, 0, Math.PI * 2);
+    inkBlob(ctx, p.x, p.y, 4, (p.id || 1) * 11 + 2, 0.4, 7);
     ctx.fill();
     ctx.restore();
   }
 
+  // The player's drawn ink — a tapered calligraphic brush with a soft bleed.
   drawStroke(ctx) {
     ctx.save();
-    ctx.lineJoin = 'round';
-    ctx.lineCap = 'round';
-    ctx.strokeStyle = 'rgba(255,255,255,0.95)';
-    ctx.shadowColor = '#9fe3ff';
-    ctx.shadowBlur = 18;
-    ctx.lineWidth = 10;
-    ctx.beginPath();
-    ctx.moveTo(this.stroke[0].x, this.stroke[0].y);
-    for (const p of this.stroke) ctx.lineTo(p.x, p.y);
-    ctx.stroke();
-    // ink head
+    // soft ink bleed underlay
+    ctx.shadowColor = '#aee6ff';
+    ctx.shadowBlur = 16;
+    brushStroke(ctx, this.stroke, 16, 'rgba(160,220,255,0.35)', true);
+    ctx.shadowBlur = 0;
+    // ink body (dark core like sumi ink) + bright center
+    brushStroke(ctx, this.stroke, 12, 'rgba(40,30,60,0.55)', true);
+    brushStroke(ctx, this.stroke, 8, 'rgba(245,250,255,0.95)', true);
+    // wet brush head
     const head = this.stroke[this.stroke.length - 1];
-    ctx.fillStyle = '#cdefff';
-    ctx.beginPath();
-    ctx.arc(head.x, head.y, 7, 0, Math.PI * 2);
+    ctx.fillStyle = '#eaf7ff';
+    inkBlob(ctx, head.x, head.y, 6, this.stroke.length * 3 + 1, 0.3, 8);
     ctx.fill();
     ctx.restore();
   }

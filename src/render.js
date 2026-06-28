@@ -1,240 +1,328 @@
-// render.js — procedural canvas art (no image assets). Original artwork drawn
-// with paths/gradients: a layered moonlit night, a Korean hanok gate with a
-// glowing taegeuk ward, and clubbed dokkaebi goblins.
+// render.js — procedural sumi-e (수묵화) style art. Everything is drawn with
+// organic, hand-inked brush paths: wobbly silhouettes, tapered calligraphic
+// strokes, and soft ink washes. No straight/sharp geometry, no image assets.
 
-// Tiny deterministic PRNG so star/mountain positions stay put frame-to-frame.
+const INK = '#16131f';
+
 function rng(seed) {
-  let s = seed >>> 0;
+  let s = (seed >>> 0) || 1;
   return () => {
     s = (s * 1664525 + 1013904223) >>> 0;
     return s / 4294967296;
   };
 }
 
-export function drawBackground(ctx, W, H, laneY, wave, time = 0) {
-  const hue = 232 + (wave % 8) * 5;
+// A smooth, organic closed blob (the core ink shape). Lobe radii are jittered
+// by a seeded RNG so the silhouette is hand-drawn, never a perfect circle.
+export function inkBlob(ctx, cx, cy, r, seed = 1, wobble = 0.16, lobes = 11) {
+  const rnd = rng(seed);
+  const pts = [];
+  for (let i = 0; i < lobes; i++) {
+    const a = (i / lobes) * Math.PI * 2;
+    const rr = r * (1 - wobble / 2 + rnd() * wobble);
+    pts.push({ x: cx + Math.cos(a) * rr, y: cy + Math.sin(a) * rr });
+  }
+  ctx.beginPath();
+  const m0 = midpoint(pts[lobes - 1], pts[0]);
+  ctx.moveTo(m0.x, m0.y);
+  for (let i = 0; i < lobes; i++) {
+    const p = pts[i];
+    const m = midpoint(p, pts[(i + 1) % lobes]);
+    ctx.quadraticCurveTo(p.x, p.y, m.x, m.y);
+  }
+  ctx.closePath();
+}
 
-  // --- sky gradient ---
+function midpoint(a, b) { return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }; }
+
+// A tapered calligraphic brush ribbon through `pts` (width swells in the middle
+// and thins to a point at each end — like a real brush stroke).
+export function brushStroke(ctx, pts, maxW, color, taper = true) {
+  if (pts.length < 2) return;
+  const n = pts.length;
+  const left = [], right = [];
+  for (let i = 0; i < n; i++) {
+    const p = pts[i];
+    const prev = pts[Math.max(0, i - 1)];
+    const next = pts[Math.min(n - 1, i + 1)];
+    let dx = next.x - prev.x, dy = next.y - prev.y;
+    const len = Math.hypot(dx, dy) || 1; dx /= len; dy /= len;
+    const t = i / (n - 1);
+    const prof = taper ? Math.sin(Math.PI * t) ** 0.7 : 1;
+    const w = (0.18 + 0.82 * prof) * maxW / 2;
+    left.push({ x: p.x - dy * w, y: p.y + dx * w });
+    right.push({ x: p.x + dy * w, y: p.y - dx * w });
+  }
+  ctx.beginPath();
+  ctx.moveTo(left[0].x, left[0].y);
+  for (let i = 1; i < n; i++) ctx.lineTo(left[i].x, left[i].y);
+  for (let i = n - 1; i >= 0; i--) ctx.lineTo(right[i].x, right[i].y);
+  ctx.closePath();
+  ctx.fillStyle = color;
+  ctx.fill();
+}
+
+// A wavy ridge edge (for ink-wash mountains / ground).
+function wavyTop(W, baseY, amp, freq, seed) {
+  const r = rng(seed);
+  const pts = [];
+  for (let x = -20; x <= W + 20; x += 16) {
+    const y = baseY - (Math.sin(x * freq + seed) * 0.5 + 0.5) * amp - r() * amp * 0.25;
+    pts.push({ x, y });
+  }
+  return pts;
+}
+
+function fillUnder(ctx, pts, laneY, W, fill) {
+  ctx.beginPath();
+  ctx.moveTo(-20, laneY);
+  ctx.lineTo(pts[0].x, pts[0].y);
+  for (let i = 1; i < pts.length; i++) {
+    const m = midpoint(pts[i - 1], pts[i]);
+    ctx.quadraticCurveTo(pts[i - 1].x, pts[i - 1].y, m.x, m.y);
+  }
+  ctx.lineTo(W + 20, laneY);
+  ctx.closePath();
+  ctx.fillStyle = fill;
+  ctx.fill();
+}
+
+export function drawBackground(ctx, W, H, laneY, wave, time = 0) {
+  const hue = 230 + (wave % 8) * 5;
+
+  // --- paper-ink sky wash ---
   const sky = ctx.createLinearGradient(0, 0, 0, H);
-  sky.addColorStop(0, `hsl(${hue}, 52%, 9%)`);
-  sky.addColorStop(0.45, `hsl(${hue + 8}, 46%, 15%)`);
-  sky.addColorStop(0.75, `hsl(${hue + 16}, 38%, 12%)`);
-  sky.addColorStop(1, `hsl(${hue + 22}, 30%, 6%)`);
+  sky.addColorStop(0, `hsl(${hue}, 38%, 8%)`);
+  sky.addColorStop(0.5, `hsl(${hue + 8}, 30%, 13%)`);
+  sky.addColorStop(0.78, `hsl(${hue + 14}, 24%, 17%)`); // ink reserve near horizon
+  sky.addColorStop(1, `hsl(${hue + 18}, 28%, 10%)`);
   ctx.fillStyle = sky;
   ctx.fillRect(0, 0, W, H);
 
-  // --- aurora veil ---
-  ctx.save();
-  ctx.globalAlpha = 0.10;
-  const aur = ctx.createLinearGradient(0, 0, W, H * 0.4);
-  aur.addColorStop(0, '#3df0c8');
-  aur.addColorStop(0.5, '#7f9dff');
-  aur.addColorStop(1, '#c89bff');
-  ctx.fillStyle = aur;
-  ctx.beginPath();
-  for (let x = 0; x <= W; x += 12) {
-    const y = H * 0.2 + Math.sin(x * 0.01 + time * 0.3) * 26 + Math.sin(x * 0.03) * 12;
-    if (x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-  }
-  ctx.lineTo(W, 0); ctx.lineTo(0, 0); ctx.closePath();
-  ctx.fill();
-  ctx.restore();
-
-  // --- stars (twinkling) ---
+  // --- ink-splatter stars (cheap dots) ---
   const sr = rng(1337);
   ctx.save();
-  for (let i = 0; i < 110; i++) {
+  ctx.fillStyle = '#efe6cf';
+  for (let i = 0; i < 80; i++) {
     const x = sr() * W;
-    const y = sr() * laneY * 0.85;
-    const base = 0.3 + sr() * 0.7;
-    const tw = 0.5 + 0.5 * Math.sin(time * 2 + i * 1.7);
-    ctx.globalAlpha = base * (0.4 + tw * 0.6);
-    ctx.fillStyle = i % 7 === 0 ? '#cfe6ff' : '#fff';
-    const s = sr() * 1.6 + 0.4;
-    ctx.fillRect(x, y, s, s);
+    const y = sr() * laneY * 0.8;
+    const s = sr() * 1.5 + 0.5;
+    const tw = 0.5 + 0.5 * Math.sin(time * 1.6 + i * 1.7);
+    ctx.globalAlpha = (0.18 + sr() * 0.5) * (0.4 + tw * 0.6);
+    ctx.beginPath();
+    ctx.arc(x, y, s, 0, Math.PI * 2);
+    ctx.fill();
   }
   ctx.restore();
 
-  // --- moon with craters + halo ---
-  const mx = W * 0.8, my = H * 0.17, mr = 40;
+  // --- brushed moon with wash halo ---
+  const mx = W * 0.79, my = H * 0.16, mr = 40;
   ctx.save();
-  const halo = ctx.createRadialGradient(mx, my, mr * 0.6, mx, my, mr * 3);
-  halo.addColorStop(0, 'rgba(255,246,214,0.32)');
-  halo.addColorStop(1, 'rgba(255,246,214,0)');
+  const halo = ctx.createRadialGradient(mx, my, mr * 0.5, mx, my, mr * 3.2);
+  halo.addColorStop(0, 'rgba(239,230,207,0.28)');
+  halo.addColorStop(1, 'rgba(239,230,207,0)');
   ctx.fillStyle = halo;
-  ctx.fillRect(mx - mr * 3, my - mr * 3, mr * 6, mr * 6);
+  ctx.fillRect(mx - mr * 3.2, my - mr * 3.2, mr * 6.4, mr * 6.4);
+  // moon disc (organic)
+  inkBlob(ctx, mx, my, mr, 7, 0.07, 16);
   const mg = ctx.createRadialGradient(mx - 12, my - 12, 6, mx, my, mr);
-  mg.addColorStop(0, '#fffdf2');
-  mg.addColorStop(1, '#ece3bf');
+  mg.addColorStop(0, '#fbf5e3');
+  mg.addColorStop(1, '#e3d7b4');
   ctx.fillStyle = mg;
-  ctx.beginPath();
-  ctx.arc(mx, my, mr, 0, Math.PI * 2);
   ctx.fill();
-  ctx.fillStyle = 'rgba(180,170,130,0.35)';
+  // ink rim (brushy, partial)
+  ctx.strokeStyle = 'rgba(120,110,80,0.35)';
+  ctx.lineWidth = 1.4;
+  ctx.stroke();
+  // wash craters
+  ctx.fillStyle = 'rgba(170,158,120,0.3)';
   const cr = rng(99);
-  for (let i = 0; i < 6; i++) {
-    const a = cr() * Math.PI * 2, d = cr() * mr * 0.7;
-    const crad = 3 + cr() * 6;
-    ctx.beginPath();
-    ctx.arc(mx + Math.cos(a) * d, my + Math.sin(a) * d, crad, 0, Math.PI * 2);
+  for (let i = 0; i < 5; i++) {
+    const a = cr() * Math.PI * 2, d = cr() * mr * 0.6;
+    inkBlob(ctx, mx + Math.cos(a) * d, my + Math.sin(a) * d, 3 + cr() * 6, i * 53 + 5, 0.4, 8);
     ctx.fill();
   }
   ctx.restore();
 
-  // --- parallax mountain layers ---
-  drawRidge(ctx, W, laneY, laneY - 30, 0.018, 70, 7, '#171a33', 0.9);
-  drawRidge(ctx, W, laneY, laneY - 14, 0.026, 52, 13, '#1e2240', 0.95);
-  drawRidge(ctx, W, laneY, laneY + 2, 0.04, 34, 23, '#252a4d', 1);
+  // --- sumi-e mountain ridges (ink wash + brushy crest) ---
+  inkRidge(ctx, W, laneY, laneY - 34, 30, 0.016, 11, `hsla(${hue}, 30%, 14%, 0.85)`, 'rgba(10,10,20,0.5)');
+  inkRidge(ctx, W, laneY, laneY - 16, 44, 0.024, 27, `hsla(${hue + 6}, 28%, 18%, 0.92)`, 'rgba(12,12,24,0.55)');
+  inkRidge(ctx, W, laneY, laneY + 2, 58, 0.034, 41, `hsla(${hue + 10}, 26%, 22%, 1)`, 'rgba(14,14,26,0.6)');
 
-  // --- forest silhouette near the lane ---
-  ctx.fillStyle = '#10131f';
-  const fr = rng(55);
-  for (let x = -10; x < W + 10; x += 18) {
-    const th = 16 + fr() * 22;
-    ctx.beginPath();
-    ctx.moveTo(x, laneY + 4);
-    ctx.lineTo(x + 9, laneY + 4 - th);
-    ctx.lineTo(x + 18, laneY + 4);
-    ctx.closePath();
-    ctx.fill();
+  // --- calligraphic bamboo / reeds near the lane ---
+  const br = rng(202);
+  ctx.save();
+  for (let i = 0; i < 9; i++) {
+    const bx = br() * W;
+    const bh = 26 + br() * 30;
+    const lean = (br() - 0.5) * 14;
+    const stalk = [];
+    for (let s = 0; s <= 6; s++) {
+      const t = s / 6;
+      stalk.push({ x: bx + lean * t + Math.sin(time + i) * 1.5 * t, y: laneY + 4 - t * bh });
+    }
+    ctx.globalAlpha = 0.5;
+    brushStroke(ctx, stalk, 3.4, '#0c0f17', true);
+    // leaf flicks
+    for (let l = 0; l < 2; l++) {
+      const ty = laneY + 4 - bh * (0.55 + l * 0.25);
+      const lx = bx + lean * (0.55 + l * 0.25);
+      const dir = l % 2 ? 1 : -1;
+      brushStroke(ctx, [{ x: lx, y: ty }, { x: lx + dir * 10, y: ty - 6 }, { x: lx + dir * 20, y: ty - 8 }], 3, '#0c0f17', true);
+    }
   }
+  ctx.restore();
 
-  // --- ground ---
+  // --- ground ink wash with a brushy (wavy) top edge ---
+  const gpts = wavyTop(W, laneY + 4, 10, 0.03, 303);
   const ground = ctx.createLinearGradient(0, laneY, 0, H);
-  ground.addColorStop(0, '#2c2440');
-  ground.addColorStop(0.5, '#221a30');
-  ground.addColorStop(1, '#120c1c');
-  ctx.fillStyle = ground;
-  ctx.fillRect(0, laneY, W, H - laneY);
-
-  // stone path tiles along the lane
+  ground.addColorStop(0, 'rgba(40,32,54,0.96)');
+  ground.addColorStop(1, '#0d0a16');
+  fillUnder(ctx, gpts, H, W, ground);
+  // a darker brushed shoreline along the lane
   ctx.save();
   ctx.globalAlpha = 0.5;
-  ctx.strokeStyle = 'rgba(255,255,255,0.05)';
-  ctx.lineWidth = 1;
-  for (let i = 0; i < 7; i++) {
-    const ty = laneY + 14 + i * 12;
-    ctx.beginPath(); ctx.moveTo(0, ty); ctx.lineTo(W, ty); ctx.stroke();
-  }
+  brushStroke(ctx, gpts.filter((_, i) => i % 2 === 0), 3, '#0a0712', false);
   ctx.restore();
 
-  // --- drifting fog band over the lane ---
-  ctx.save();
-  ctx.globalAlpha = 0.12;
-  ctx.fillStyle = '#9fb0e0';
+  // --- drifting ink mist ---
   for (let i = 0; i < 3; i++) {
-    const off = (time * (12 + i * 6)) % (W + 200) - 100;
+    const off = (time * (10 + i * 5) + i * 180) % (W + 260) - 130;
+    ctx.save();
+    ctx.globalAlpha = 0.10;
+    ctx.shadowColor = '#cdd7ee';
+    ctx.shadowBlur = 24;
+    ctx.translate(off, laneY + 8 + i * 9);
+    ctx.scale(1, 0.16);
+    inkBlob(ctx, 0, 0, 120, i * 17 + 4, 0.5, 9);
+    ctx.fillStyle = '#cdd7ee';
+    ctx.fill();
+    ctx.restore();
+  }
+
+  // --- floating embers (soft dots) ---
+  ctx.save();
+  for (let i = 0; i < 12; i++) {
+    const ex = (i * 103 + time * (7 + (i % 3) * 4)) % W;
+    const ey = laneY - 26 - ((time * 13 + i * 64) % (laneY * 0.5));
+    ctx.globalAlpha = 0.18 * (0.5 + 0.5 * Math.sin(time * 2 + i));
+    ctx.fillStyle = i % 2 ? '#e9c887' : '#9fc7e3';
     ctx.beginPath();
-    ctx.ellipse((off + i * 160) % (W + 200), laneY + 6 + i * 8, 130, 16, 0, 0, Math.PI * 2);
+    ctx.arc(ex, ey, 1.7, 0, Math.PI * 2);
     ctx.fill();
   }
   ctx.restore();
 
-  // --- floating spirit embers ---
-  ctx.save();
-  for (let i = 0; i < 14; i++) {
-    const ex = (i * 97 + time * (8 + (i % 3) * 4)) % W;
-    const ey = laneY - 30 - ((time * 14 + i * 60) % (laneY * 0.5));
-    ctx.globalAlpha = 0.16 * (0.5 + 0.5 * Math.sin(time * 2 + i));
-    ctx.fillStyle = i % 2 ? '#ffd27a' : '#9fe3ff';
-    ctx.beginPath();
-    ctx.arc(ex, ey, 1.6, 0, Math.PI * 2);
-    ctx.fill();
-  }
-  ctx.restore();
+  // --- soft paper vignette ---
+  const vig = ctx.createRadialGradient(W / 2, H * 0.5, H * 0.3, W / 2, H * 0.5, H * 0.8);
+  vig.addColorStop(0, 'rgba(0,0,0,0)');
+  vig.addColorStop(1, 'rgba(0,0,0,0.28)');
+  ctx.fillStyle = vig;
+  ctx.fillRect(0, 0, W, H);
 }
 
-function drawRidge(ctx, W, laneY, baseY, freq, amp, seed, color, alpha) {
-  const r = rng(seed);
+function inkRidge(ctx, W, laneY, baseY, amp, freq, seed, wash, crest) {
+  const pts = wavyTop(W, baseY, amp, freq, seed);
+  const grad = ctx.createLinearGradient(0, baseY - amp, 0, laneY);
+  grad.addColorStop(0, crest);
+  grad.addColorStop(1, wash);
+  fillUnder(ctx, pts, laneY, W, grad);
+  // brushy crest line (dry brush, thin)
   ctx.save();
-  ctx.globalAlpha = alpha;
-  ctx.fillStyle = color;
-  ctx.beginPath();
-  ctx.moveTo(0, laneY);
-  for (let x = 0; x <= W; x += 8) {
-    const y = baseY - (Math.sin(x * freq + seed) * 0.5 + 0.5) * amp - r() * 8;
-    ctx.lineTo(x, y);
-  }
-  ctx.lineTo(W, laneY);
-  ctx.closePath();
-  ctx.fill();
+  ctx.globalAlpha = 0.5;
+  brushStroke(ctx, pts.filter((_, i) => i % 2 === 0), 2.4, crest, false);
   ctx.restore();
 }
 
 export function drawGate(ctx, gateX, laneY, H, hpFrac, time = 0) {
   ctx.save();
   const baseY = laneY + 34;
-  const w = 78;
+  const w = 80;
   const h = 158;
   const x = gateX - w / 2;
   const y = baseY - h;
 
-  // stone foundation
-  ctx.fillStyle = '#3b3550';
-  ctx.fillRect(x - 12, baseY - 22, w + 24, 26);
-  ctx.fillStyle = 'rgba(0,0,0,0.25)';
-  for (let i = 0; i < 4; i++) ctx.fillRect(x - 12 + i * ((w + 24) / 4), baseY - 22, 1, 26);
-
-  // pillars
-  const wood = ctx.createLinearGradient(x, 0, x + w, 0);
-  wood.addColorStop(0, '#6b4a32');
-  wood.addColorStop(0.5, '#7d5638');
-  wood.addColorStop(1, '#5a3b2a');
-  ctx.fillStyle = wood;
-  ctx.fillRect(x, y, 14, h);
-  ctx.fillRect(x + w - 14, y, 14, h);
-  // central wall
-  ctx.fillStyle = '#5e4230';
-  ctx.fillRect(x + 14, y + 10, w - 28, h - 10);
-  // plank lines
-  ctx.fillStyle = 'rgba(0,0,0,0.22)';
-  for (let i = 0; i < 5; i++) ctx.fillRect(x + 14, y + 20 + i * 28, w - 28, 2);
-
-  // tiled curved roof (hanok)
+  // stone base (flattened ink-wash blob)
   ctx.save();
-  ctx.fillStyle = '#34283f';
-  ctx.beginPath();
-  ctx.moveTo(x - 26, y + 6);
-  ctx.quadraticCurveTo(x + w / 2, y - 46, x + w + 26, y + 6);
-  ctx.quadraticCurveTo(x + w / 2, y - 10, x - 26, y + 6);
-  ctx.closePath();
+  ctx.translate(gateX, baseY - 6);
+  ctx.scale(1, 0.5);
+  inkBlob(ctx, 0, 0, w * 0.82, 12, 0.2, 12);
+  ctx.fillStyle = '#2c2740';
   ctx.fill();
-  // upturned eaves
-  ctx.strokeStyle = '#241b2e';
-  ctx.lineWidth = 4;
-  ctx.beginPath();
-  ctx.moveTo(x - 26, y + 6);
-  ctx.quadraticCurveTo(x - 34, y - 2, x - 30, y - 10);
-  ctx.moveTo(x + w + 26, y + 6);
-  ctx.quadraticCurveTo(x + w + 34, y - 2, x + w + 30, y - 10);
-  ctx.stroke();
-  // ridge tiles
-  ctx.fillStyle = '#473655';
-  ctx.fillRect(x - 26, y + 2, w + 52, 6);
   ctx.restore();
 
-  // glowing taegeuk ward (color tracks gate health)
+  // pillars — gently curved brush columns
+  const woodG = ctx.createLinearGradient(x, 0, x + w, 0);
+  woodG.addColorStop(0, '#5a3f2c');
+  woodG.addColorStop(0.5, '#74543a');
+  woodG.addColorStop(1, '#4e3526');
+  ctx.fillStyle = woodG;
+  for (const px of [x + 9, x + w - 9]) {
+    ctx.beginPath();
+    ctx.moveTo(px - 8, baseY);
+    ctx.quadraticCurveTo(px - 10, y + h / 2, px - 7, y + 8);
+    ctx.lineTo(px + 7, y + 8);
+    ctx.quadraticCurveTo(px + 10, y + h / 2, px + 8, baseY);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  // central wall — ink-wash plank panel with wavy edges
+  ctx.fillStyle = '#553c2c';
+  ctx.beginPath();
+  ctx.moveTo(x + 14, y + 16);
+  ctx.quadraticCurveTo(gateX, y + 12, x + w - 14, y + 16);
+  ctx.lineTo(x + w - 14, baseY - 4);
+  ctx.quadraticCurveTo(gateX, baseY + 2, x + 14, baseY - 4);
+  ctx.closePath();
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(0,0,0,0.22)';
+  ctx.lineWidth = 2;
+  for (let i = 1; i < 5; i++) {
+    const yy = y + 16 + i * (h - 24) / 5;
+    ctx.beginPath();
+    ctx.moveTo(x + 16, yy);
+    ctx.quadraticCurveTo(gateX, yy + 3, x + w - 16, yy);
+    ctx.stroke();
+  }
+
+  // sweeping calligraphic roof (one big brush stroke + upturned eaves)
+  const roofY = y + 4;
+  brushStroke(ctx, [
+    { x: x - 30, y: roofY + 4 }, { x: x - 18, y: roofY - 6 },
+    { x: gateX, y: roofY - 30 },
+    { x: x + w + 18, y: roofY - 6 }, { x: x + w + 30, y: roofY + 4 },
+  ], 16, '#2c2236', true);
+  // ridge tile wash
+  ctx.fillStyle = '#3b2e4a';
+  ctx.beginPath();
+  ctx.moveTo(x - 24, roofY + 2);
+  ctx.quadraticCurveTo(gateX, roofY - 12, x + w + 24, roofY + 2);
+  ctx.quadraticCurveTo(gateX, roofY + 8, x - 24, roofY + 2);
+  ctx.closePath();
+  ctx.fill();
+
+  // glowing taegeuk ward (organic, brushed)
   const g = Math.max(0, Math.min(1, hpFrac));
-  const wx = gateX, wy = baseY - h / 2 + 6, wr = 22;
+  const wx = gateX, wy = baseY - h / 2 + 4, wr = 22;
   const pulse = 1 + Math.sin(time * 3) * 0.05;
   ctx.save();
   ctx.translate(wx, wy);
   ctx.scale(pulse, pulse);
-  ctx.shadowColor = `hsl(${g * 120}, 90%, 60%)`;
+  ctx.shadowColor = `hsl(${g * 120}, 85%, 58%)`;
   ctx.shadowBlur = 26;
-  // disc
-  ctx.fillStyle = 'rgba(255,255,255,0.92)';
-  ctx.beginPath(); ctx.arc(0, 0, wr, 0, Math.PI * 2); ctx.fill();
-  // taegeuk halves (red/blue swirl)
+  inkBlob(ctx, 0, 0, wr, 21, 0.06, 16);
+  ctx.fillStyle = 'rgba(245,239,222,0.94)';
+  ctx.fill();
   ctx.shadowBlur = 0;
-  ctx.rotate(time * 0.6);
-  ctx.fillStyle = '#cf3b4a';
+  ctx.rotate(time * 0.5);
+  ctx.fillStyle = '#c23b48';
   ctx.beginPath();
   ctx.arc(0, 0, wr, -Math.PI / 2, Math.PI / 2);
   ctx.arc(0, wr / 2, wr / 2, Math.PI / 2, -Math.PI / 2, true);
   ctx.arc(0, -wr / 2, wr / 2, Math.PI / 2, -Math.PI / 2);
   ctx.fill();
-  ctx.fillStyle = '#2f5fb0';
+  ctx.fillStyle = '#2f5aa8';
   ctx.beginPath();
   ctx.arc(0, 0, wr, Math.PI / 2, -Math.PI / 2);
   ctx.arc(0, -wr / 2, wr / 2, -Math.PI / 2, Math.PI / 2, true);
@@ -242,12 +330,10 @@ export function drawGate(ctx, gateX, laneY, H, hpFrac, time = 0) {
   ctx.fill();
   ctx.restore();
 
-  // hanging banner
-  ctx.fillStyle = '#b23b4a';
-  ctx.fillRect(gateX - 7, y - 8, 14, 30);
-  ctx.fillStyle = '#ffd966';
-  ctx.beginPath();
-  ctx.arc(gateX, y + 4, 3, 0, Math.PI * 2);
+  // banner — a hanging brush stroke
+  brushStroke(ctx, [{ x: gateX, y: roofY - 2 }, { x: gateX + 1, y: roofY + 14 }, { x: gateX, y: roofY + 26 }], 13, '#a8323f', false);
+  ctx.fillStyle = '#e9c887';
+  inkBlob(ctx, gateX, roofY + 8, 3, 31, 0.3, 7);
   ctx.fill();
 
   ctx.restore();
@@ -261,158 +347,144 @@ export function drawDokkaebi(ctx, e, time = 0) {
   const r = e.radius;
   const flash = e.hitFlash > 0;
   const frozen = e.slowT > 0;
+  const seed = e.id * 131 + 7;
   const swing = Math.sin(e.bob * 1.2) * 0.4;
 
-  // shadow
-  ctx.fillStyle = 'rgba(0,0,0,0.35)';
-  ctx.beginPath();
-  ctx.ellipse(x, e.y + r * 0.98, r * 0.82, r * 0.24, 0, 0, Math.PI * 2);
+  // ink shadow
+  ctx.save();
+  ctx.translate(x, e.y + r * 0.98);
+  ctx.scale(1, 0.28);
+  inkBlob(ctx, 0, 0, r * 0.8, seed + 3, 0.3, 9);
+  ctx.fillStyle = 'rgba(0,0,0,0.32)';
   ctx.fill();
+  ctx.restore();
 
   let body = e.def.color;
   if (frozen) body = '#6fb6d6';
-  if (flash) body = '#ffffff';
 
-  // --- club (방망이) held in front arm ---
+  // club (calligraphic brush) behind body
   ctx.save();
-  ctx.translate(x - r * 0.65, y + r * 0.2);
+  ctx.translate(x - r * 0.62, y + r * 0.2);
   ctx.rotate(-0.5 + swing);
-  ctx.strokeStyle = '#6b4a2e';
-  ctx.lineCap = 'round';
-  ctx.lineWidth = r * 0.16;
-  ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, -r * 0.9); ctx.stroke();
-  ctx.fillStyle = '#7d572f';
-  ctx.beginPath(); ctx.arc(0, -r * 0.95, r * 0.26, 0, Math.PI * 2); ctx.fill();
-  // spikes on the club head
-  ctx.fillStyle = '#caa86a';
-  for (let i = 0; i < 4; i++) {
-    const a = (i / 4) * Math.PI * 2;
-    ctx.beginPath();
-    ctx.arc(Math.cos(a) * r * 0.26, -r * 0.95 + Math.sin(a) * r * 0.26, r * 0.05, 0, Math.PI * 2);
-    ctx.fill();
-  }
+  brushStroke(ctx, [{ x: 0, y: 0 }, { x: -1, y: -r * 0.5 }, { x: 0, y: -r * 0.9 }], r * 0.18, '#5b3f28', false);
+  ctx.fillStyle = '#6e4d31';
+  inkBlob(ctx, 0, -r * 0.98, r * 0.28, seed + 11, 0.22, 9);
+  ctx.fill();
   ctx.restore();
 
-  // --- body with shading ---
-  const bg = ctx.createRadialGradient(x - r * 0.3, y - r * 0.3, r * 0.2, x, y, r);
-  bg.addColorStop(0, lighten(body, 28));
-  bg.addColorStop(1, body);
-  ctx.fillStyle = flash ? '#fff' : bg;
-  ctx.strokeStyle = 'rgba(0,0,0,0.45)';
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.arc(x, y, r, 0, Math.PI * 2);
+  // --- body: organic ink silhouette with wash shading ---
+  inkBlob(ctx, x, y, r, seed, 0.14, 13);
+  if (flash) {
+    ctx.fillStyle = '#fff';
+  } else {
+    const bg = ctx.createRadialGradient(x - r * 0.3, y - r * 0.35, r * 0.2, x, y, r * 1.05);
+    bg.addColorStop(0, lighten(body, 30));
+    bg.addColorStop(0.7, body);
+    bg.addColorStop(1, darken(body, 28));
+    ctx.fillStyle = bg;
+  }
   ctx.fill();
+  // brushed ink outline (slightly irregular via the blob path)
+  ctx.lineWidth = Math.max(1.5, r * 0.07);
+  ctx.strokeStyle = 'rgba(15,10,20,0.55)';
   ctx.stroke();
 
-  // fur loincloth
-  ctx.fillStyle = '#6b4a2e';
-  ctx.beginPath();
-  ctx.moveTo(x - r * 0.6, y + r * 0.55);
+  // fur loincloth (brush flicks)
+  ctx.fillStyle = '#5b3f28';
   for (let i = -3; i <= 3; i++) {
-    ctx.lineTo(x + i * r * 0.2, y + r * 0.95);
-    ctx.lineTo(x + (i + 0.5) * r * 0.2, y + r * 0.6);
+    brushStroke(ctx, [
+      { x: x + i * r * 0.18, y: y + r * 0.5 },
+      { x: x + i * r * 0.18 + 1, y: y + r * 0.78 },
+      { x: x + i * r * 0.18, y: y + r * 0.98 },
+    ], r * 0.16, '#5b3f28', true);
   }
-  ctx.lineTo(x + r * 0.6, y + r * 0.55);
-  ctx.closePath();
-  ctx.fill();
 
-  // belly patch
-  ctx.fillStyle = 'rgba(255,255,255,0.1)';
-  ctx.beginPath();
-  ctx.ellipse(x, y + r * 0.22, r * 0.5, r * 0.42, 0, 0, Math.PI * 2);
+  // belly wash
+  ctx.save();
+  ctx.globalAlpha = 0.12;
+  ctx.fillStyle = '#fff';
+  inkBlob(ctx, x, y + r * 0.22, r * 0.46, seed + 5, 0.3, 9);
   ctx.fill();
+  ctx.restore();
 
-  // horns
-  ctx.fillStyle = e.def.horn;
-  ctx.strokeStyle = 'rgba(0,0,0,0.3)';
-  ctx.lineWidth = 1;
+  // horns — tapered calligraphic strokes
   for (const s of [-1, 1]) {
-    ctx.beginPath();
-    ctx.moveTo(x + s * r * 0.42, y - r * 0.72);
-    ctx.quadraticCurveTo(x + s * r * 0.95, y - r * 1.25, x + s * r * 0.62, y - r * 1.45);
-    ctx.quadraticCurveTo(x + s * r * 0.5, y - r * 1.0, x + s * r * 0.18, y - r * 0.95);
-    ctx.closePath();
-    ctx.fill(); ctx.stroke();
+    brushStroke(ctx, [
+      { x: x + s * r * 0.42, y: y - r * 0.68 },
+      { x: x + s * r * 0.78, y: y - r * 1.08 },
+      { x: x + s * r * 0.6, y: y - r * 1.42 },
+    ], r * 0.26, e.def.horn, true);
   }
   if (e.def.boss) {
-    ctx.fillStyle = '#ffd24d';
+    ctx.save();
     ctx.shadowColor = '#ffae00';
     ctx.shadowBlur = 10;
     for (let i = -2; i <= 2; i++) {
-      ctx.beginPath();
-      ctx.moveTo(x + i * r * 0.32, y - r * 0.85);
-      ctx.lineTo(x + i * r * 0.32 + 5, y - r * 1.15);
-      ctx.lineTo(x + i * r * 0.32 + 11, y - r * 0.85);
-      ctx.closePath();
-      ctx.fill();
+      brushStroke(ctx, [
+        { x: x + i * r * 0.3, y: y - r * 0.82 },
+        { x: x + i * r * 0.3 + 4, y: y - r * 1.12 },
+      ], r * 0.14, '#ffd24d', true);
     }
-    ctx.shadowBlur = 0;
+    ctx.restore();
   }
 
-  // angry brows
-  ctx.strokeStyle = '#1a0e0e';
-  ctx.lineWidth = Math.max(2, r * 0.08);
-  ctx.lineCap = 'round';
-  ctx.beginPath();
-  ctx.moveTo(x - r * 0.52, y - r * 0.34);
-  ctx.lineTo(x - r * 0.14, y - r * 0.16);
-  ctx.moveTo(x + r * 0.52, y - r * 0.34);
-  ctx.lineTo(x + r * 0.14, y - r * 0.16);
-  ctx.stroke();
+  // angry brows (brush)
+  for (const s of [-1, 1]) {
+    brushStroke(ctx, [
+      { x: x + s * r * 0.52, y: y - r * 0.34 },
+      { x: x + s * r * 0.14, y: y - r * 0.15 },
+    ], r * 0.1, '#140c10', true);
+  }
 
-  // glowing eyes
+  // glowing eyes (ink dots with halo)
   for (const s of [-1, 1]) {
     ctx.save();
     ctx.shadowColor = flash ? 'transparent' : '#ffd000';
     ctx.shadowBlur = flash ? 0 : 8;
     ctx.fillStyle = flash ? '#000' : '#ffe14d';
-    ctx.beginPath();
-    ctx.ellipse(x + s * r * 0.33, y - r * 0.05, r * 0.17, r * 0.21, 0, 0, Math.PI * 2);
+    inkBlob(ctx, x + s * r * 0.32, y - r * 0.04, r * 0.18, seed + (s > 0 ? 21 : 33), 0.3, 9);
     ctx.fill();
     ctx.restore();
     ctx.fillStyle = '#140d05';
-    ctx.beginPath();
-    ctx.arc(x + s * r * 0.33, y - r * 0.02, r * 0.07, 0, Math.PI * 2);
+    inkBlob(ctx, x + s * r * 0.34, y - r * 0.01, r * 0.07, seed + 41, 0.3, 7);
     ctx.fill();
   }
 
-  // fanged mouth
-  ctx.fillStyle = '#2a0d0d';
-  ctx.beginPath();
-  ctx.ellipse(x, y + r * 0.4, r * 0.26, r * 0.18, 0, 0, Math.PI);
-  ctx.fill();
-  ctx.fillStyle = '#fff';
+  // fanged mouth (brush arc + tusks)
+  brushStroke(ctx, [
+    { x: x - r * 0.26, y: y + r * 0.38 },
+    { x: x, y: y + r * 0.5 },
+    { x: x + r * 0.26, y: y + r * 0.38 },
+  ], r * 0.14, '#2a0d0d', true);
+  ctx.fillStyle = '#f3ecd9';
   for (const s of [-1, 1]) {
-    ctx.beginPath();
-    ctx.moveTo(x + s * r * 0.14, y + r * 0.36);
-    ctx.lineTo(x + s * r * 0.08, y + r * 0.56);
-    ctx.lineTo(x + s * r * 0.02, y + r * 0.36);
-    ctx.closePath();
-    ctx.fill();
+    brushStroke(ctx, [
+      { x: x + s * r * 0.12, y: y + r * 0.4 },
+      { x: x + s * r * 0.08, y: y + r * 0.56 },
+    ], r * 0.07, '#f3ecd9', true);
   }
 
-  // frost shell
+  // frost wash
   if (frozen) {
-    ctx.strokeStyle = 'rgba(220,250,255,0.8)';
+    ctx.save();
+    ctx.globalAlpha = 0.5;
+    ctx.strokeStyle = 'rgba(220,250,255,0.9)';
     ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.arc(x, y, r * 1.06, 0, Math.PI * 2); ctx.stroke();
-    ctx.fillStyle = 'rgba(200,240,255,0.15)';
-    ctx.beginPath(); ctx.arc(x, y, r * 1.06, 0, Math.PI * 2); ctx.fill();
+    inkBlob(ctx, x, y, r * 1.08, seed + 2, 0.16, 13);
+    ctx.stroke();
+    ctx.restore();
   }
 
-  // hp bar
+  // hp bar (rounded, brushy)
   const bw = r * 1.9;
   const bx = x - bw / 2;
   const by = y - r - (e.def.boss ? 24 : 15);
-  ctx.fillStyle = 'rgba(0,0,0,0.6)';
-  ctx.fillRect(bx - 1.5, by - 1.5, bw + 3, 7);
+  roundedBar(ctx, bx - 1.5, by - 1.5, bw + 3, 6, 'rgba(0,0,0,0.6)');
   const frac = Math.max(0, e.hp / e.maxHp);
-  ctx.fillStyle = `hsl(${frac * 120}, 80%, 50%)`;
-  ctx.fillRect(bx, by, bw * frac, 4);
+  roundedBar(ctx, bx, by, bw * frac, 4, `hsl(${frac * 120}, 75%, 52%)`);
   if (e.def.boss) {
-    ctx.fillStyle = '#ffd966';
-    ctx.font = 'bold 12px system-ui, sans-serif';
+    ctx.fillStyle = '#e9c887';
+    ctx.font = 'bold 12px "Apple SD Gothic Neo", system-ui, sans-serif';
     ctx.textAlign = 'center';
     ctx.fillText(e.def.name, x, by - 6);
   }
@@ -420,10 +492,26 @@ export function drawDokkaebi(ctx, e, time = 0) {
   ctx.restore();
 }
 
-function lighten(hex, amt) {
+function roundedBar(ctx, x, y, w, h, color) {
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  const r = h / 2;
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+  ctx.fill();
+}
+
+function lighten(hex, amt) { return shift(hex, amt); }
+function darken(hex, amt) { return shift(hex, -amt); }
+function shift(hex, amt) {
   const n = parseInt(hex.slice(1), 16);
-  const r = Math.min(255, ((n >> 16) & 255) + amt);
-  const g = Math.min(255, ((n >> 8) & 255) + amt);
-  const b = Math.min(255, (n & 255) + amt);
+  const r = clamp(((n >> 16) & 255) + amt);
+  const g = clamp(((n >> 8) & 255) + amt);
+  const b = clamp((n & 255) + amt);
   return `rgb(${r},${g},${b})`;
 }
+function clamp(v) { return Math.max(0, Math.min(255, v)); }

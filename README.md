@@ -192,18 +192,24 @@ landing at ~18% (mistaken for `ㅇ`) before this guard.
 
 ## Art & graphics
 
-Everything is **original procedural artwork** drawn at runtime with canvas paths and
-gradients — there are no image assets and no emoji in the game UI:
+Everything is **original procedural artwork** drawn at runtime in a **sumi-e (수묵화) ink-wash /
+calligraphy style** — organic hand-inked silhouettes and tapered brush strokes, no straight/sharp
+geometry, no image assets, and no emoji in the game UI:
 
-- A layered moonlit night: gradient sky with an aurora veil, a twinkling starfield, a craters-and-
-  halo moon, three parallax mountain ridges, a forest silhouette, drifting fog, and floating embers.
-- A **Korean hanok gate** with a curved tiled roof, stone foundation, hanging banner, and a glowing
-  **taegeuk (태극)** ward whose colour tracks the gate's health.
-- **Dokkaebi** goblins with shaded bodies, horns, glowing eyes, fur loincloths, and spiked clubs
-  (the boss gets a golden crown and aura).
-- A hand-drawn **SVG icon set** (`#ic-*` symbols in `index.html`, tinted via `currentColor`) for
-  every HUD button, bar, stat, and shop entry — pause/play, sound, spellbook, shop bag, coin,
-  goblin, gate, brush, sparkle, sword, swirl, jar, droplet, and more.
+- Brush helpers do the work: `inkBlob` (wobbly seeded silhouettes that are never perfect circles),
+  `brushStroke` (tapered calligraphic ribbons that swell in the middle and thin to a point), and
+  ink-wash gradient ridges.
+- A layered moonlit night: ink-wash sky, a softly brushed moon with a wash halo, three sumi-e
+  mountain ridges with wavy crests, calligraphic bamboo/reeds, drifting ink mist, and a paper vignette.
+- A **Korean hanok gate** drawn with a single sweeping calligraphic roof stroke, curved brush
+  pillars, a wavy plank panel, and a glowing **taegeuk (태극)** ward whose colour tracks gate health.
+- **Dokkaebi** with organic ink-blob bodies, tapered brush horns, fur-flick loincloths, glowing
+  ink eyes, and brush clubs (the boss gets a crown + aura).
+- The player's drawn letters render as a real **calligraphic brush** — dark sumi core, bright
+  centre, soft bleed, and a wet brush head.
+- A hand-drawn **SVG icon set** (`#ic-*` symbols, tinted via `currentColor`) with a `feTurbulence`
+  displacement filter for slightly wavy, hand-inked edges; UI panels and buttons use organic
+  asymmetric `border-radius` so nothing is a hard rectangle.
 
 ## License
 
