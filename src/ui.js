@@ -77,11 +77,12 @@ export class UI {
 
     document.getElementById('restartBtn').addEventListener('click', () => game.restart());
     const sound = document.getElementById('soundToggle');
+    const soundIcon = document.getElementById('soundIcon');
     sound.addEventListener('click', () => {
       import('./audio.js').then(({ Audio }) => {
         const on = !Audio.isEnabled();
         Audio.setEnabled(on);
-        sound.textContent = on ? '🔊' : '🔇';
+        soundIcon.setAttribute('href', on ? '#ic-sound' : '#ic-mute');
       });
     });
     this.refreshShop();
@@ -89,13 +90,15 @@ export class UI {
 
   setHold(on) {
     this.el.holdBtn.classList.toggle('active', on);
-    this.el.holdBtn.textContent = on ? '✍️ 그리는 중…' : '✍️ 모아 그리기';
+    const label = this.el.holdBtn.querySelector('span');
+    if (label) label.textContent = on ? '그리는 중…' : '모아 그리기';
     this.el.castBtn.classList.toggle('ready', on);
   }
 
   setPaused(on) {
     this.el.pauseOverlay.classList.toggle('show', on);
-    this.el.pauseToggle.textContent = on ? '▶' : '⏸';
+    const icon = document.getElementById('pauseIcon');
+    if (icon) icon.setAttribute('href', on ? '#ic-play' : '#ic-pause');
   }
 
   showTutorial(step, idx, total) {
@@ -207,10 +210,10 @@ export class UI {
       row.dataset.key = key;
       row.dataset.cost = cost;
       row.innerHTML =
-        `<div class="si-icon">${meta.icon}</div>` +
+        `<div class="si-icon"><svg class="ic"><use href="#${meta.icon}"/></svg></div>` +
         `<div class="si-main"><div class="si-name">${meta.name} <span class="si-lvl">Lv.${lvl}</span></div>` +
         `<div class="si-desc">${meta.desc}</div></div>` +
-        `<div class="si-cost">💰${cost}</div>`;
+        `<div class="si-cost"><svg class="ic xs"><use href="#ic-coin"/></svg>${cost}</div>`;
       row.addEventListener('click', () => {
         if (g.buyUpgrade(key)) this.refreshShop();
       });

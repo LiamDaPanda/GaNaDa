@@ -68,7 +68,10 @@ function scaleToSquare(points) {
   const w = b.width || 1;
   const h = b.height || 1;
   const ratio = Math.min(w, h) / Math.max(w, h);
-  if (ratio < 0.22) {
+  // Lines (ㅡ ㅣ) are the only near-1D strokes; a hand-tilted line can reach a
+  // ratio near 0.3, so use a generous cutoff to keep scaling them uniformly
+  // (no consonant/tick-vowel is anywhere near this thin).
+  if (ratio < 0.3) {
     const s = SQUARE_SIZE / Math.max(w, h);
     return points.map((p) => ({ x: (p.x - b.minX) * s, y: (p.y - b.minY) * s }));
   }

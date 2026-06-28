@@ -190,6 +190,21 @@ without ever turning one letter into another (a mirror is not a reversal). Measu
 consonant and vowel recognizes ~100% within its syllable slot, with no confusions — up from `ㅁ`
 landing at ~18% (mistaken for `ㅇ`) before this guard.
 
+## Art & graphics
+
+Everything is **original procedural artwork** drawn at runtime with canvas paths and
+gradients — there are no image assets and no emoji in the game UI:
+
+- A layered moonlit night: gradient sky with an aurora veil, a twinkling starfield, a craters-and-
+  halo moon, three parallax mountain ridges, a forest silhouette, drifting fog, and floating embers.
+- A **Korean hanok gate** with a curved tiled roof, stone foundation, hanging banner, and a glowing
+  **taegeuk (태극)** ward whose colour tracks the gate's health.
+- **Dokkaebi** goblins with shaded bodies, horns, glowing eyes, fur loincloths, and spiked clubs
+  (the boss gets a golden crown and aura).
+- A hand-drawn **SVG icon set** (`#ic-*` symbols in `index.html`, tinted via `currentColor`) for
+  every HUD button, bar, stat, and shop entry — pause/play, sound, spellbook, shop bag, coin,
+  goblin, gate, brush, sparkle, sword, swirl, jar, droplet, and more.
+
 ## License
 
 MIT

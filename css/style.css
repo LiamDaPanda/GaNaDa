@@ -7,6 +7,21 @@
 
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 
+/* ---------- SVG icon system ---------- */
+.ic {
+  width: 20px;
+  height: 20px;
+  display: inline-block;
+  vertical-align: middle;
+  color: currentColor;
+  flex: 0 0 auto;
+}
+.ic.sm { width: 14px; height: 14px; }
+.ic.xs { width: 13px; height: 13px; margin-right: 1px; }
+.ic.big { width: 40px; height: 40px; }
+.lbl.gold { color: var(--gold); }
+.lbl.danger { color: #ff8a6b; }
+
 html, body {
   height: 100%;
   overflow: hidden;
@@ -54,19 +69,23 @@ html, body {
   line-height: 1.1;
   min-width: 32px;
 }
-.stat .lbl { font-size: 9px; opacity: 0.7; white-space: nowrap; }
+.stat .lbl { font-size: 9px; opacity: 0.7; white-space: nowrap; display: flex; align-items: center; justify-content: center; height: 12px; }
+.stat .lbl .ic { width: 13px; height: 13px; }
 .stat span:last-child { font-size: 15px; font-weight: 700; color: var(--gold); }
 .hud-actions { margin-left: auto; display: flex; gap: 5px; pointer-events: auto; }
 .icon-btn {
   pointer-events: auto;
   border: 1px solid var(--panel-line);
   background: var(--panel);
-  color: #fff;
+  color: #e8e2f2;
   width: 34px; height: 34px;
   border-radius: 9px;
   font-size: 16px;
   padding: 0;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 .icon-btn:active { transform: scale(0.92); }
 
@@ -134,7 +153,12 @@ html, body {
   border: 1px solid var(--panel-line);
   border-radius: 14px;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
 }
+.draw-btn .ic { width: 18px; height: 18px; }
 .draw-btn:active { transform: scale(0.97); }
 .draw-btn.active {
   background: linear-gradient(90deg, #ffb347, var(--gold));
@@ -276,7 +300,9 @@ html, body {
 }
 .shop-item.afford { opacity: 1; border-color: rgba(255, 217, 102, 0.5); }
 .shop-item:active { transform: scale(0.98); }
-.si-icon { font-size: 24px; }
+.si-icon { color: var(--gold); display: flex; align-items: center; }
+.si-icon .ic { width: 26px; height: 26px; }
+.si-cost { display: flex; align-items: center; gap: 1px; }
 .si-main { flex: 1; }
 .si-name { font-size: 14px; font-weight: 700; }
 .si-lvl { font-size: 11px; opacity: 0.7; font-weight: 400; }

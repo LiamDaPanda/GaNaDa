@@ -46,6 +46,7 @@ export class Game {
     this.lastTime = 0;
     this.paused = false;
     this.manualPause = false;  // paused via the button (vs. auto-pause)
+    this.started = false;      // gameplay frozen until the title is dismissed
     this.gameOver = false;
     this.haptic = true;        // navigator.vibrate feedback
     this.lowInkFlash = 0;
@@ -75,6 +76,12 @@ export class Game {
     });
     this.resize();
     this.startWave();
+  }
+
+  // Called once the title screen is dismissed — unfreezes gameplay.
+  begin() {
+    this.started = true;
+    this.lastTime = performance.now();
   }
 
   togglePause() {
@@ -200,7 +207,7 @@ export class Game {
     this.spawnElapsed = 0;
     this.spawnIndex = 0;
     Audio.wave();
-    this.ui.banner(`${w}번째 물결!`, isBoss ? '⚠️ 도깨비 대장 출현' : '');
+    this.ui.banner(`${w}번째 물결!`, isBoss ? '<svg class="ic"><use href="#ic-warn"/></svg> 도깨비 대장 출현' : '');
   }
 
   spawnUpdate(dt) {
@@ -222,7 +229,7 @@ export class Game {
       this.state.gold += 10 + this.state.wave * 2;
       this.texts.push(new FloatingText(this.W / 2, this.H * 0.4, '물결 클리어! +보너스', '#ffe27a', 26));
       this.save();
-      setTimeout(() => { if (!this.gameOver) this.startWave(); }, 1600);
+      setTimeout(() => { if (!this.gameOver && !this.tutorial.active) this.startWave(); }, 1600);
     }
   }
 
@@ -296,7 +303,7 @@ export class Game {
   healGate(amount) {
     if (!amount) return;
     this.state.gateHp = Math.min(this.state.gateMax, this.state.gateHp + amount);
-    this.texts.push(new FloatingText(this.gateX, this.laneY - 80, `+${amount} 🏯`, '#ffe27a', 20));
+    this.texts.push(new FloatingText(this.gateX, this.laneY - 80, `성문 +${amount}`, '#ffe27a', 20));
   }
 
   // ㅏ/ㅣ — a forward lance that pierces everything in a horizontal band.
@@ -461,6 +468,12 @@ export class Game {
   }
 
   onKill(e) {
+    // tutorial dummies give visual feedback only — no rewards/combo
+    if (this.tutorial.active) {
+      Audio.enemyDie();
+      this.spawnBurst(e.x, e.y, e.def.color, 18);
+      return;
+    }
     // chain the combo and apply its score multiplier
     this.combo++;
     this.comboTimer = this.COMBO_WINDOW;
@@ -472,7 +485,7 @@ export class Game {
     this.state.score += Math.round(e.maxHp * mult);
     Audio.enemyDie();
     this.spawnBurst(e.x, e.y, e.def.color, e.def.boss ? 50 : 18);
-    this.texts.push(new FloatingText(e.x, e.y - 10, `+${e.gold}💰`, '#ffd966', 16));
+    this.texts.push(new FloatingText(e.x, e.y - 10, `+${e.gold}₩`, '#ffd966', 16));
     if (this.combo > 1 && this.combo % 5 === 0) {
       this.texts.push(new FloatingText(this.W / 2, this.H * 0.42, `${this.combo} 콤보! x${mult.toFixed(2)}`, '#ffd23d', 24));
       this.buzz(12);
@@ -598,10 +611,14 @@ export class Game {
     return false;
   }
 
+  composeWindow() {
+    return this.tutorial.active ? 1.4 : this.COMPOSE_WINDOW; // calmer pace while learning
+  }
+
   // Push (or, when id is null, merge-in-place) a jamo into the buffer.
   addJamo(id, at, toast = null) {
     if (id !== null) this.compose.jamos.push(id);
-    this.compose.timer = this.COMPOSE_WINDOW;
+    this.compose.timer = this.composeWindow();
     this.compose.x = at.x;
     this.compose.y = at.y;
     Audio.compose(this.compose.jamos.length);
@@ -649,10 +666,10 @@ export class Game {
     this.tutorial.step++;
     this.buzz(20);
     if (this.tutorial.step >= TUTORIAL_STEPS.length) {
-      this.texts.push(new FloatingText(this.W / 2, this.H * 0.5, '완료! 🎉', '#ffd23d', 30));
+      this.texts.push(new FloatingText(this.W / 2, this.H * 0.5, '완료!', '#ffd23d', 30));
       this.endTutorial(false);
     } else {
-      this.texts.push(new FloatingText(this.W / 2, this.H * 0.5, '좋아요! ✨', '#9fe3ff', 26));
+      this.texts.push(new FloatingText(this.W / 2, this.H * 0.5, '좋아요!', '#9fe3ff', 26));
       this.ui.showTutorial(TUTORIAL_STEPS[this.tutorial.step], this.tutorial.step, TUTORIAL_STEPS.length);
     }
   }
@@ -662,7 +679,10 @@ export class Game {
     try { localStorage.setItem('ganada_tutorial_done', '1'); } catch (e) { /* ignore */ }
     this.ui.hideTutorial();
     this.enemies = [];
+    this.projectiles = [];
     this.holdMode = false;
+    this.combo = 0;
+    this.comboTimer = 0;
     if (this.ui) this.ui.setHold(false);
     this.startWave();
   }
@@ -721,7 +741,7 @@ export class Game {
     const loop = (t) => {
       const dt = Math.min(0.05, (t - this.lastTime) / 1000 || 0);
       this.lastTime = t;
-      if (!this.paused && !this.gameOver) this.update(dt);
+      if (this.started && !this.paused && !this.gameOver) this.update(dt);
       this.render();
       requestAnimationFrame(loop);
     };
@@ -745,9 +765,10 @@ export class Game {
       if (this.compose.timer <= 0) this.commitSyllable();
     }
 
-    // auto turret (the "idle" damage)
+    // auto turret (the "idle" damage) — paused during the tutorial so the
+    // player's own casts are what clear the practice targets.
     this.turretTimer -= dt;
-    if (this.turretTimer <= 0 && this.enemies.length) {
+    if (this.turretTimer <= 0 && this.enemies.length && !this.tutorial.active) {
       this.turretTimer = this.state.turretRate;
       const target = this.frontmost();
       if (target) {
@@ -809,29 +830,32 @@ export class Game {
   // ---- rendering -----------------------------------------------------------
   render() {
     const ctx = this.ctx;
+    const time = (this.lastTime || 0) / 1000;
     ctx.save();
     if (this.shake > 0.5) {
       ctx.translate((Math.random() - 0.5) * this.shake, (Math.random() - 0.5) * this.shake);
     }
-    drawBackground(ctx, this.W, this.H, this.laneY, this.state.wave);
-    drawGate(ctx, this.gateX, this.laneY, this.H, this.state.gateHp / this.state.gateMax);
+    drawBackground(ctx, this.W, this.H, this.laneY, this.state.wave, time);
+    drawGate(ctx, this.gateX, this.laneY, this.H, this.state.gateHp / this.state.gateMax, time);
 
     // enemies sorted by depth (y)
     const sorted = [...this.enemies].sort((a, b) => a.y - b.y);
-    for (const e of sorted) drawDokkaebi(ctx, e);
+    for (const e of sorted) drawDokkaebi(ctx, e, time);
 
     // projectiles
     for (const p of this.projectiles) this.drawProjectile(ctx, p);
 
-    // particles
+    // particles (additive glow)
+    ctx.globalCompositeOperation = 'lighter';
     for (const p of this.particles) {
       const a = Math.max(0, p.life / p.maxLife);
-      ctx.globalAlpha = a;
+      ctx.globalAlpha = a * 0.9;
       ctx.fillStyle = p.color;
       ctx.beginPath();
       ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
       ctx.fill();
     }
+    ctx.globalCompositeOperation = 'source-over';
     ctx.globalAlpha = 1;
 
     // floating text
@@ -914,7 +938,7 @@ export class Game {
     ctx.shadowBlur = 0;
     ctx.font = '12px system-ui';
     ctx.fillStyle = 'rgba(255,255,255,0.7)';
-    const hint = this.holdMode ? '계속 그리고 ✨시전' : (this.compose.jamos.length === 1 ? '모음을 더 그려보세요' : '');
+    const hint = this.holdMode ? '계속 그리고 시전' : (this.compose.jamos.length === 1 ? '모음을 더 그려보세요' : '');
     if (hint) ctx.fillText(hint, cx, cy + 56);
     ctx.restore();
   }

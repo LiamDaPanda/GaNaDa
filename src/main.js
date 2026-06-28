@@ -19,6 +19,7 @@ function boot() {
     Audio.unlock();
     title.classList.add('hidden');
     window.removeEventListener('pointerdown', dismiss);
+    game.begin();
     if (firstRun) game.startTutorial();
   };
   document.getElementById('startBtn').addEventListener('click', dismiss);
