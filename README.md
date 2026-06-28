@@ -216,6 +216,28 @@ indigo, moss, brass) rather than glowing colours, particles use normal (non-addi
 glows are dialled right down, and the player's drawn letters render as warm **bone-white brush ink**
 (금니/은니 sutra style) on the dark paper instead of a neon stroke.
 
+### Art-style themes (⚙ Settings)
+
+Three fully distinct, switchable styles (saved to your browser):
+
+- **먹빛 / Calligraphy** — the muted sumi-e ink wash (default): bone-white brush, ink mountains,
+  moon, mist, bamboo.
+- **네온 / Cyberpunk** — synthwave: a magenta neon sun with cyan rings, a perspective grid floor,
+  a neon city skyline with lit windows, scanlines, additive glow, and a cyan brush. Spell colours
+  are re-saturated to neon and the UI accents turn cyan/magenta.
+- **고대 / Ancient** — warm dusk: an amber sun low on the horizon, stone-pagoda silhouettes, sand
+  dunes, flickering torches, a bronze brush and 단청-bronze UI.
+
+Each theme supplies its own palette, background decorations, glow level, particle blending, brush
+colours, and CSS accent variables.
+
+### Language (한국어 / English)
+
+A language toggle in Settings translates the whole interface — HUD, buttons, spellbook (spell
+names *and* descriptions), shop, tutorial, banners, and game-over — while the **Korean letters you
+draw stay Korean** (the point of the game). The doubled/compound/cluster mechanics and easter-egg
+word spells (불 → Inferno, 물 → Tidal Wave, …) are translated too.
+
 ## License
 
 MIT

@@ -2,6 +2,7 @@
 // Each recognized jamo maps to a spell. Harder-to-draw letters cost more
 // mana ("먹" / ink) and hit harder. Tuned so the simple ㅅ fireball is your
 // bread-and-butter and the ㄹ dragon's-breath is a screen-clearing ultimate.
+import { getLang } from './i18n.js';
 
 export const ATTACKS = {
   siot: {
@@ -16,7 +17,7 @@ export const ATTACKS = {
     radius: 70,
     kind: 'projectile', // travels to nearest enemy then explodes
     burn: { dps: 8, duration: 2.5 },
-    desc: '단일 대상에 폭발 + 화상',
+    desc: '단일 대상에 폭발 + 화상', descEn: 'Single-target blast + burn',
   },
   giyeok: {
     jamo: 'ㄱ',
@@ -30,7 +31,7 @@ export const ATTACKS = {
     radius: 0,
     kind: 'chain', // arcs between up to `chains` enemies
     chains: 4,
-    desc: '여러 적에게 연쇄 피해',
+    desc: '여러 적에게 연쇄 피해', descEn: 'Chains between enemies',
   },
   nieun: {
     jamo: 'ㄴ',
@@ -44,7 +45,7 @@ export const ATTACKS = {
     radius: 150,
     kind: 'aoe', // slams the front line, knocks back
     knockback: 60,
-    desc: '전방 광역 피해 + 넉백',
+    desc: '전방 광역 피해 + 넉백', descEn: 'Frontline AoE + knockback',
   },
   ieung: {
     jamo: 'ㅇ',
@@ -58,7 +59,7 @@ export const ATTACKS = {
     radius: 220,
     kind: 'nova', // damages everything + repairs the gate
     heal: 14,
-    desc: '전체 피해 + 성문 수리',
+    desc: '전체 피해 + 성문 수리', descEn: 'Hits all + repairs the gate',
   },
   mieum: {
     jamo: 'ㅁ',
@@ -72,7 +73,7 @@ export const ATTACKS = {
     radius: 200,
     kind: 'aoe',
     freeze: { slow: 0.35, duration: 3.0 }, // multiply speed by slow
-    desc: '광역 피해 + 둔화(빙결)',
+    desc: '광역 피해 + 둔화(빙결)', descEn: 'AoE damage + slow (freeze)',
   },
   digeut: {
     jamo: 'ㄷ',
@@ -86,7 +87,7 @@ export const ATTACKS = {
     radius: 165,
     kind: 'aoe',
     burn: { dps: 12, duration: 3.5 }, // "poison" reuses the damage-over-time path
-    desc: '광역 피해 + 중독(지속 피해)',
+    desc: '광역 피해 + 중독(지속 피해)', descEn: 'AoE + poison damage-over-time',
   },
   bieup: {
     jamo: 'ㅂ',
@@ -100,7 +101,7 @@ export const ATTACKS = {
     radius: 95,
     kind: 'projectile',
     knockback: 55,
-    desc: '단일 폭발 + 강한 넉백',
+    desc: '단일 폭발 + 강한 넉백', descEn: 'Single blast + strong knockback',
   },
   jieut: {
     jamo: 'ㅈ',
@@ -114,7 +115,7 @@ export const ATTACKS = {
     radius: 80,
     kind: 'lance',
     knockback: 40,
-    desc: '전방 베기 + 넉백',
+    desc: '전방 베기 + 넉백', descEn: 'Forward slash + knockback',
   },
   chieut: {
     jamo: 'ㅊ',
@@ -128,7 +129,7 @@ export const ATTACKS = {
     radius: 170,
     kind: 'aoe',
     knockback: 50,
-    desc: '광역 회오리 + 넉백',
+    desc: '광역 회오리 + 넉백', descEn: 'Wide tornado + knockback',
   },
   kieuk: {
     jamo: 'ㅋ',
@@ -141,7 +142,7 @@ export const ATTACKS = {
     baseDamage: 40,
     radius: 90,
     kind: 'projectile',
-    desc: '고위력 단일 폭발',
+    desc: '고위력 단일 폭발', descEn: 'High-damage single blast',
   },
   tieut: {
     jamo: 'ㅌ',
@@ -155,7 +156,7 @@ export const ATTACKS = {
     radius: 1,
     kind: 'rain',
     count: 5,
-    desc: '하늘에서 떨어지는 빛기둥',
+    desc: '하늘에서 떨어지는 빛기둥', descEn: 'Pillars fall from the sky',
   },
   pieup: {
     jamo: 'ㅍ',
@@ -169,7 +170,7 @@ export const ATTACKS = {
     radius: 999,
     kind: 'sweep',
     knockback: 30,
-    desc: '진로를 휩쓰는 폭풍',
+    desc: '진로를 휩쓰는 폭풍', descEn: 'Lane-wide sweeping storm',
   },
   hieut: {
     jamo: 'ㅎ',
@@ -183,7 +184,7 @@ export const ATTACKS = {
     radius: 230,
     kind: 'nova',
     heal: 16,
-    desc: '전체 피해 + 성문 수리',
+    desc: '전체 피해 + 성문 수리', descEn: 'Hits all + repairs the gate',
   },
   rieul: {
     jamo: 'ㄹ',
@@ -197,7 +198,7 @@ export const ATTACKS = {
     radius: 999,
     kind: 'beam', // sweeps the whole field — ultimate
     burn: { dps: 16, duration: 3.0 },
-    desc: '전 화면 강타 (궁극기)',
+    desc: '전 화면 강타 (궁극기)', descEn: 'Full-screen ultimate',
   },
 };
 
@@ -312,6 +313,36 @@ export const ELEMENT_NAME = {
   water: '물', holy: '빛', ice: '서리', arcane: '용',
   wind: '바람', shadow: '암흑', light: '섬광', sun: '태양',
 };
+const ELEMENT_NAME_EN = {
+  fire: 'Flame', lightning: 'Bolt', earth: 'Earth', poison: 'Poison',
+  water: 'Water', holy: 'Light', ice: 'Frost', arcane: 'Dragon',
+  wind: 'Wind', shadow: 'Shadow', light: 'Ray', sun: 'Sun',
+};
+function elementName(el) {
+  return getLang() === 'en' ? (ELEMENT_NAME_EN[el] || el) : (ELEMENT_NAME[el] || el);
+}
+
+// English names for vowels (attached as nameEn so localName() works).
+const VOWEL_EN = {
+  a: 'Spear', eo: 'Swirl', o: 'Rain', u: 'Meteor', eu: 'Wave', i: 'Pierce',
+  ya: 'Twin Spear', yeo: 'Great Swirl', yo: 'Downpour', yu: 'Meteor Shower',
+  ae: 'Twin Lance', yae: 'Triple Spear', e: 'Double Swirl', ye: 'Triple Swirl',
+  wa: 'Storm Meteor', wae: 'Great Storm', oe: 'Spiral Rain', wo: 'Abyss Meteor',
+  we: 'Great Abyss', wi: 'Spiral Meteor', ui: 'Deep Wave',
+};
+for (const k of Object.keys(VOWELS)) VOWELS[k].nameEn = VOWEL_EN[k];
+
+const VOWEL_DESC_EN = {
+  a: 'Piercing forward spear', eo: 'Wide area blast', o: 'Rain from the sky',
+  u: 'Giant meteor strike', eu: 'Wave sweeping the lane', i: 'Powerful piercing hit',
+  ya: 'Empowered pierce (strong)', yeo: 'Huge area blast (strong)',
+  yo: 'Heavy downpour (strong)', yu: 'Giant meteor (strong)',
+  ae: 'ㅏ+ㅣ · strong pierce', yae: 'ㅑ+ㅣ · super pierce', e: 'ㅓ+ㅣ · area blast',
+  ye: 'ㅕ+ㅣ · huge blast', wa: 'ㅗ+ㅏ · storm meteor', wae: 'ㅘ+ㅣ · great meteor',
+  oe: 'ㅗ+ㅣ · spiral rain', wo: 'ㅜ+ㅓ · abyss meteor', we: 'ㅝ+ㅣ · great meteor',
+  wi: 'ㅜ+ㅣ · spiral meteor', ui: 'ㅡ+ㅣ · empowered wave',
+};
+for (const k of Object.keys(VOWELS)) VOWELS[k].descEn = VOWEL_DESC_EN[k];
 
 // --- Hangul composition: build the precomposed syllable character so the HUD
 // can show "가" assembling in real time. Indices follow Unicode U+AC00 rules.
@@ -354,12 +385,12 @@ export function composeSyllable(jamos) {
 // A few iconic syllables get a bespoke name and a power bump (easter eggs).
 // Keyed by the composed character.
 export const NAMED_SYLLABLES = {
-  '불': { name: '지옥불', element: 'fire', bonus: 1.4 },   // ㅂㅜㄹ = "fire"
-  '물': { name: '해일', element: 'water', bonus: 1.4 },    // ㅁㅜㄹ = "water"
-  '산': { name: '산사태', element: 'earth', bonus: 1.35 }, // ㅅㅏㄴ = "mountain"
-  '강': { name: '급류', element: 'water', bonus: 1.3 },    // ㄱㅏㅇ = "river"
-  '빛': { name: '천벌', element: 'holy', bonus: 1.4 },     // ㅂㅣㅊ-ish light
-  '가': { name: '낙뢰참', bonus: 1.2 },                    // your example, ㄱㅏ
+  '불': { name: '지옥불', nameEn: 'Inferno', element: 'fire', bonus: 1.4 },   // ㅂㅜㄹ = "fire"
+  '물': { name: '해일', nameEn: 'Tidal Wave', element: 'water', bonus: 1.4 }, // ㅁㅜㄹ = "water"
+  '산': { name: '산사태', nameEn: 'Landslide', element: 'earth', bonus: 1.35 }, // ㅅㅏㄴ = "mountain"
+  '강': { name: '급류', nameEn: 'Torrent', element: 'water', bonus: 1.3 },    // ㄱㅏㅇ = "river"
+  '빛': { name: '천벌', nameEn: 'Judgment', element: 'holy', bonus: 1.4 },    // ㅂㅣㅊ-ish light
+  '가': { name: '낙뢰참', nameEn: 'Thunder Strike', bonus: 1.2 },            // your example, ㄱㅏ
 };
 
 // Resolve a consonant id (base, doubled, or cluster) to a spell + power factors.
@@ -385,12 +416,16 @@ export function buildSyllableSpell(jamos) {
   if (!cInfo) return null;
   const C = cInfo.atk;
 
+  const en = getLang() === 'en';
+  const cName = en && C.nameEn ? C.nameEn : C.name;
+
   if (jamos.length === 1) {
     if (!cInfo.doubled) return C;
     // a lone doubled consonant: a powered-up version of the base spell
+    const dblName = en ? `Double ${cName}` : `쌍${cName}`;
     return {
       ...C, composed: true, char: jamoChar(jamos[0]), jamo: jamoChar(jamos[0]),
-      jamos: jamos.slice(), name: `${jamoChar(jamos[0])} · 쌍${C.name}`,
+      jamos: jamos.slice(), name: `${jamoChar(jamos[0])} · ${dblName}`,
       manaCost: Math.round(C.manaCost * cInfo.manaK), baseDamage: C.baseDamage * cInfo.dmgK,
     };
   }
@@ -399,7 +434,8 @@ export function buildSyllableSpell(jamos) {
   if (!V) return C;
 
   const char = composeSyllable(jamos);
-  const elName = ELEMENT_NAME[C.element] || C.name;
+  const elName = elementName(C.element);
+  const vName = en && V.nameEn ? V.nameEn : V.name;
   const isUltimate = jamos.length >= 3;
   const c2Info = isUltimate ? resolveConsonant(jamos[2]) : null;
   const C2 = c2Info ? c2Info.atk : null;
@@ -423,7 +459,7 @@ export function buildSyllableSpell(jamos) {
     char,
     jamos: jamos.slice(),
     jamo: char,
-    name: `${char} · ${elName}${V.name}`,
+    name: `${char} · ${elName}${en ? ' ' : ''}${vName}`,
     element: C.element,
     color: C.color,
     glow: C.glow,
@@ -448,7 +484,8 @@ export function buildSyllableSpell(jamos) {
   const named = NAMED_SYLLABLES[char];
   if (named) {
     spell.baseDamage *= named.bonus;
-    if (named.name) spell.name = `${char} · ${named.name}`;
+    const nm = en && named.nameEn ? named.nameEn : named.name;
+    if (nm) spell.name = `${char} · ${nm}`;
     if (named.element) spell.element = named.element;
   }
 

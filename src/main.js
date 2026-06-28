@@ -2,10 +2,13 @@
 import { Game } from './game.js';
 import { UI } from './ui.js';
 import { Audio } from './audio.js';
+import { applyThemeCSS } from './themes.js';
 
 function boot() {
+  applyThemeCSS();
   const canvas = document.getElementById('game');
   const ui = new UI();
+  ui.applyI18n();
   const game = new Game(canvas, ui);
   ui.bind(game);
   game.start();

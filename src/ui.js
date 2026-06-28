@@ -1,9 +1,12 @@
-// ui.js — DOM HUD, spellbook, upgrade shop, drawing controls, overlays.
+// ui.js — DOM HUD, spellbook, shop, settings (themes + language), overlays.
 import {
   ATTACKS, ATTACK_ORDER, VOWELS, VOWEL_ORDER,
   composeSyllable, buildSyllableSpell,
 } from './attacks.js';
 import { UPGRADES, UPGRADE_ORDER } from './upgrades.js';
+import { t, getLang, setLang, localName } from './i18n.js';
+import { THEMES, THEME_ORDER, getThemeId, setTheme } from './themes.js';
+import { Audio } from './audio.js';
 
 export class UI {
   constructor() {
@@ -27,6 +30,7 @@ export class UI {
       banner: document.getElementById('banner'),
       shop: document.getElementById('shop'),
       spellbook: document.getElementById('spellbook'),
+      settings: document.getElementById('settings'),
       bookBody: document.getElementById('bookBody'),
       holdBtn: document.getElementById('holdBtn'),
       castBtn: document.getElementById('castBtn'),
@@ -40,58 +44,117 @@ export class UI {
 
   bind(game) {
     this.game = game;
-    document.getElementById('shopToggle').addEventListener('click', () => {
-      this.el.spellbook.classList.remove('open');
-      this.el.shop.classList.toggle('open');
-      if (this.el.shop.classList.contains('open')) this.refreshShop();
-    });
-    document.getElementById('shopClose').addEventListener('click', () => {
+    const closeDrawers = () => {
       this.el.shop.classList.remove('open');
-    });
-    document.getElementById('bookToggle').addEventListener('click', () => {
-      this.el.shop.classList.remove('open');
-      this.el.spellbook.classList.toggle('open');
-    });
-    document.getElementById('bookClose').addEventListener('click', () => {
       this.el.spellbook.classList.remove('open');
-    });
-    document.querySelectorAll('.book-tab').forEach((t) => {
-      t.addEventListener('click', () => {
+      this.el.settings.classList.remove('open');
+    };
+    const drawerToggle = (panel, after) => {
+      const open = !panel.classList.contains('open');
+      closeDrawers();
+      panel.classList.toggle('open', open);
+      if (open && after) after();
+    };
+    document.getElementById('shopToggle').addEventListener('click', () => drawerToggle(this.el.shop, () => this.refreshShop()));
+    document.getElementById('shopClose').addEventListener('click', closeDrawers);
+    document.getElementById('bookToggle').addEventListener('click', () => drawerToggle(this.el.spellbook));
+    document.getElementById('bookClose').addEventListener('click', closeDrawers);
+    document.getElementById('settingsToggle').addEventListener('click', () => drawerToggle(this.el.settings, () => this.buildSettings()));
+    document.getElementById('settingsClose').addEventListener('click', closeDrawers);
+
+    document.querySelectorAll('.book-tab').forEach((tab) => {
+      tab.addEventListener('click', () => {
         document.querySelectorAll('.book-tab').forEach((x) => x.classList.remove('active'));
-        t.classList.add('active');
-        this.bookTab = t.dataset.tab;
+        tab.classList.add('active');
+        this.bookTab = tab.dataset.tab;
         this.buildSpellbook();
       });
     });
 
-    // Drawing controls
     this.el.holdBtn.addEventListener('click', () => game.beginHold());
     this.el.castBtn.addEventListener('click', () => game.castComposed());
     document.getElementById('clearBtn').addEventListener('click', () => game.clearCompose());
 
-    // Pause: button + tapping the overlay resumes
     this.el.pauseToggle.addEventListener('click', () => game.togglePause());
     this.el.pauseOverlay.addEventListener('click', () => game.togglePause());
-
     document.getElementById('tutSkip').addEventListener('click', () => game.endTutorial(true));
-
     document.getElementById('restartBtn').addEventListener('click', () => game.restart());
-    const sound = document.getElementById('soundToggle');
-    const soundIcon = document.getElementById('soundIcon');
-    sound.addEventListener('click', () => {
-      import('./audio.js').then(({ Audio }) => {
-        const on = !Audio.isEnabled();
-        Audio.setEnabled(on);
-        soundIcon.setAttribute('href', on ? '#ic-sound' : '#ic-mute');
-      });
-    });
+
     this.refreshShop();
+    this.buildSettings();
+  }
+
+  // ---- i18n -----------------------------------------------------------------
+  applyI18n() {
+    document.querySelectorAll('[data-i18n]').forEach((el) => {
+      el.textContent = t(el.dataset.i18n);
+    });
+    document.querySelectorAll('[data-i18n-html]').forEach((el) => {
+      el.innerHTML = t(el.dataset.i18nHtml);
+    });
+    this.setHold(this.game ? this.game.holdMode : false);
+    this.buildSpellbook();
+    if (this.game) this.refreshShop();
+  }
+
+  // ---- settings (themes + language + sound) ---------------------------------
+  buildSettings() {
+    // art styles
+    const themeRow = document.getElementById('themeRow');
+    themeRow.innerHTML = '';
+    for (const id of THEME_ORDER) {
+      const tdef = THEMES[id];
+      const b = document.createElement('button');
+      b.className = 'opt-btn' + (id === getThemeId() ? ' active' : '');
+      b.innerHTML = `<span class="opt-swatch" style="background:linear-gradient(135deg,${tdef.ui.gold},${tdef.ui.ink})"></span>` +
+        `<span>${getLang() === 'en' ? tdef.nameEn : tdef.name}</span>`;
+      b.addEventListener('click', () => {
+        setTheme(id);
+        Audio.buy();
+        this.buildSettings();
+      });
+      themeRow.appendChild(b);
+    }
+    // language
+    const langRow = document.getElementById('langRow');
+    langRow.innerHTML = '';
+    for (const [id, label] of [['ko', '한국어'], ['en', 'English']]) {
+      const b = document.createElement('button');
+      b.className = 'opt-btn' + (id === getLang() ? ' active' : '');
+      b.textContent = label;
+      b.addEventListener('click', () => {
+        setLang(id);
+        Audio.buy();
+        this.applyI18n();
+        this.buildSettings();
+      });
+      langRow.appendChild(b);
+    }
+    // sound + vibration toggles
+    this.buildToggle('soundRow', Audio.isEnabled(), (on) => Audio.setEnabled(on));
+    this.buildToggle('vibRow', this.game ? this.game.haptic : true, (on) => { if (this.game) this.game.haptic = on; });
+  }
+
+  buildToggle(rowId, state, onChange) {
+    const row = document.getElementById(rowId);
+    row.innerHTML = '';
+    for (const [val, key] of [[true, 'set.on'], [false, 'set.off']]) {
+      const b = document.createElement('button');
+      b.className = 'opt-btn' + (state === val ? ' active' : '');
+      b.textContent = t(key);
+      b.addEventListener('click', () => {
+        onChange(val);
+        Audio.unlock();
+        this.buildSettings();
+      });
+      row.appendChild(b);
+    }
   }
 
   setHold(on) {
     this.el.holdBtn.classList.toggle('active', on);
     const label = this.el.holdBtn.querySelector('span');
-    if (label) label.textContent = on ? '그리는 중…' : '모아 그리기';
+    if (label) label.textContent = on ? t('btn.holding') : t('btn.hold');
     this.el.castBtn.classList.toggle('ready', on);
   }
 
@@ -102,15 +165,13 @@ export class UI {
   }
 
   showTutorial(step, idx, total) {
-    this.el.tutCount.textContent = `연습 ${idx + 1}/${total}`;
+    this.el.tutCount.textContent = t('tut.practice', { n: idx + 1, m: total });
     this.el.tutTitle.textContent = step.title;
     this.el.tutDetail.textContent = step.detail;
     this.el.tutorial.classList.add('show');
   }
 
-  hideTutorial() {
-    this.el.tutorial.classList.remove('show');
-  }
+  hideTutorial() { this.el.tutorial.classList.remove('show'); }
 
   buildSpellbook() {
     const body = this.el.bookBody;
@@ -118,46 +179,33 @@ export class UI {
     if (this.bookTab === 'cons') {
       for (const key of ATTACK_ORDER) {
         const a = ATTACKS[key];
-        body.appendChild(rowEl(a.jamo, a.color, a.name, a.desc, `먹 ${a.manaCost}`, key));
+        body.appendChild(rowEl(a.jamo, a.color, localName(a), localDesc(a), `${t('bar.ink')} ${a.manaCost}`, key));
       }
     } else if (this.bookTab === 'vow') {
-      const note = document.createElement('p');
-      note.className = 'book-note';
-      note.textContent = '모음은 단독으로 쓸 수 없어요. 자음 뒤에 이어 그리면 마법의 형태가 바뀝니다.';
-      body.appendChild(note);
+      body.appendChild(noteEl(t('book.vowNote')));
       for (const key of VOWEL_ORDER) {
         const v = VOWELS[key];
-        body.appendChild(rowEl(v.jamo, '#9fe3ff', v.name, v.desc, `+먹 ${v.manaCost}`));
+        body.appendChild(rowEl(v.jamo, 'var(--ink)', localName(v), localDesc(v), `+${t('bar.ink')} ${v.manaCost}`));
       }
     } else {
-      const note = document.createElement('p');
-      note.className = 'book-note';
-      note.innerHTML =
-        '자음+모음(+받침)을 이어 그려 글자를 완성하세요. 글자가 길수록 강력!<br>' +
-        '<b>쌍자음</b>: 같은 자음을 두 번 (ㄱㄱ=<b>ㄲ</b>) → 강화 마법.<br>' +
-        '<b>복합 모음</b>: 모음을 이어서 (ㅗ+ㅏ=<b>ㅘ</b>, ㅏ+ㅣ=<b>ㅐ</b>).';
-      body.appendChild(note);
-      // each example: combined jamo ids (what gets cast) + a "draw this" hint
+      body.appendChild(noteEl(t('book.comboNote')));
       const examples = [
         { j: ['giyeok', 'a'], draw: 'ㄱ + ㅏ' },
-        { j: ['ggiyeok', 'a'], draw: 'ㄱ ㄱ + ㅏ (쌍)' },
+        { j: ['ggiyeok', 'a'], draw: 'ㄱ ㄱ + ㅏ' },
         { j: ['siot', 'a', 'nieun'], draw: 'ㅅ + ㅏ + ㄴ' },
         { j: ['bieup', 'u', 'rieul'], draw: 'ㅂ + ㅜ + ㄹ' },
         { j: ['giyeok', 'eo', 'nieun'], draw: 'ㄱ + ㅓ + ㄴ' },
         { j: ['hieut', 'yeo', 'rieul'], draw: 'ㅎ + ㅕ + ㄹ' },
-        { j: ['giyeok', 'wa'], draw: 'ㄱ + ㅗ ㅏ (ㅘ)' },
-        { j: ['ieung', 'ui'], draw: 'ㅇ + ㅡ ㅣ (ㅢ)' },
+        { j: ['giyeok', 'wa'], draw: 'ㄱ + ㅗ ㅏ' },
+        { j: ['ieung', 'ui'], draw: 'ㅇ + ㅡ ㅣ' },
       ];
       for (const ex of examples) {
-        const char = composeSyllable(ex.j);
         const spell = buildSyllableSpell(ex.j);
-        body.appendChild(rowEl(char, spell.color || '#fff', ex.draw, spell.name || '', `먹 ${spell.manaCost}`));
+        body.appendChild(rowEl(composeSyllable(ex.j), spell.color || 'var(--ink)', ex.draw, spell.name || '', `${t('bar.ink')} ${spell.manaCost}`));
       }
     }
   }
 
-  // flashRune kept as a safe no-op hook (the old on-screen rune bar is gone);
-  // a matching spellbook row pulses if the book is open.
   flashRune(keyOrAtk) {
     if (!this.el.spellbook.classList.contains('open')) return;
     const key = typeof keyOrAtk === 'string'
@@ -192,7 +240,6 @@ export class UI {
     this.el.manaFill.style.width = `${mf * 100}%`;
     this.el.manaText.textContent = `${Math.floor(s.mana)}/${s.manaMax}`;
     this.el.manaBar.classList.toggle('low', lowInk);
-    // keep shop affordability live if open
     if (this.el.shop.classList.contains('open')) this.updateShopAffordability();
   }
 
@@ -211,12 +258,10 @@ export class UI {
       row.dataset.cost = cost;
       row.innerHTML =
         `<div class="si-icon"><svg class="ic"><use href="#${meta.icon}"/></svg></div>` +
-        `<div class="si-main"><div class="si-name">${meta.name} <span class="si-lvl">Lv.${lvl}</span></div>` +
-        `<div class="si-desc">${meta.desc}</div></div>` +
+        `<div class="si-main"><div class="si-name">${localName(meta)} <span class="si-lvl">Lv.${lvl}</span></div>` +
+        `<div class="si-desc">${localDesc(meta)}</div></div>` +
         `<div class="si-cost"><svg class="ic xs"><use href="#ic-coin"/></svg>${cost}</div>`;
-      row.addEventListener('click', () => {
-        if (g.buyUpgrade(key)) this.refreshShop();
-      });
+      row.addEventListener('click', () => { if (g.buyUpgrade(key)) this.refreshShop(); });
       list.appendChild(row);
     }
     this.updateShopAffordability();
@@ -225,21 +270,29 @@ export class UI {
   updateShopAffordability() {
     const g = this.game;
     document.querySelectorAll('.shop-item').forEach((row) => {
-      const cost = Number(row.dataset.cost);
-      row.classList.toggle('afford', g.state.gold >= cost);
+      row.classList.toggle('afford', g.state.gold >= Number(row.dataset.cost));
     });
   }
 
   showGameOver(s, best, bestCombo = 0) {
-    this.el.goStats.innerHTML =
-      `도달 물결 <b>${s.wave}</b> · 점수 <b>${s.score}</b> · 처치 <b>${s.kills}</b><br>` +
-      `최고 콤보 <b>${bestCombo}</b> · 최고 기록 <b>${best || s.wave}</b>물결`;
+    this.el.goStats.innerHTML = t('go.stats', {
+      wave: s.wave, score: s.score, kills: s.kills, combo: bestCombo, best: best || s.wave,
+    });
     this.el.gameOver.classList.add('show');
   }
 
-  hideGameOver() {
-    this.el.gameOver.classList.remove('show');
-  }
+  hideGameOver() { this.el.gameOver.classList.remove('show'); }
+}
+
+function localDesc(obj) {
+  return getLang() === 'en' && obj.descEn ? obj.descEn : obj.desc;
+}
+
+function noteEl(html) {
+  const p = document.createElement('p');
+  p.className = 'book-note';
+  p.innerHTML = html;
+  return p;
 }
 
 function rowEl(jamo, color, name, desc, cost, key = '') {
@@ -249,7 +302,7 @@ function rowEl(jamo, color, name, desc, cost, key = '') {
   row.innerHTML =
     `<div class="book-jamo" style="color:${color}">${jamo}</div>` +
     `<div class="book-main"><div class="book-name">${name}</div>` +
-    `<div class="book-desc">${desc}</div></div>` +
+    `<div class="book-desc">${desc || ''}</div></div>` +
     (cost ? `<div class="book-cost">${cost}</div>` : '');
   return row;
 }

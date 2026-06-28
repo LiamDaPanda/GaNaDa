@@ -34,6 +34,9 @@
     <symbol id="ic-jar" viewBox="0 0 24 24"><path d="M8 4h8M9 4v3.2c-2 1-3 3-3 5.8v4a2 2 0 002 2h8a2 2 0 002-2v-4c0-2.8-1-4.8-3-5.8V4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M6.2 13.5h11.6" stroke="currentColor" stroke-width="1.4"/></symbol>
     <symbol id="ic-droplet" viewBox="0 0 24 24"><path d="M12 3.5c3.2 5 6 8 6 11a6 6 0 01-12 0c0-3 2.8-6 6-11z" fill="currentColor"/></symbol>
     <symbol id="ic-warn" viewBox="0 0 24 24"><path d="M12 3l9.5 17H2.5z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M12 9v5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="17" r="1.2" fill="currentColor"/></symbol>
+    <symbol id="ic-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 3.5v2.4M12 18.1v2.4M3.5 12h2.4M18.1 12h2.4M6 6l1.7 1.7M16.3 16.3 18 18M18 6l-1.7 1.7M7.7 16.3 6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+    <symbol id="ic-palette" viewBox="0 0 24 24"><path d="M12 3.5a8.5 8.5 0 0 0 0 17c1.4 0 2-1 2-1.8 0-1.4-1.2-1.5-1.2-2.6 0-.8.7-1.4 1.6-1.4H16a4.5 4.5 0 0 0 4.5-4.7C20.3 6.4 16.6 3.5 12 3.5z" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="8" cy="11" r="1.1" fill="currentColor"/><circle cx="9.5" cy="7.5" r="1.1" fill="currentColor"/><circle cx="14" cy="7.5" r="1.1" fill="currentColor"/></symbol>
+    <symbol id="ic-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M3.5 12h17M12 3.5c2.4 2.3 2.4 14.7 0 17M12 3.5c-2.4 2.3-2.4 14.7 0 17" fill="none" stroke="currentColor" stroke-width="1.4"/></symbol>
   </svg>
 
   <div id="app">
@@ -41,28 +44,28 @@
 
     <!-- Top HUD -->
     <header id="hud">
-      <div class="stat"><span class="lbl">물결</span><span id="wave">1</span></div>
+      <div class="stat"><span class="lbl" data-i18n="hud.wave">물결</span><span id="wave">1</span></div>
       <div class="stat"><span class="lbl gold"><svg class="ic"><use href="#ic-coin"/></svg></span><span id="gold">0</span></div>
-      <div class="stat"><span class="lbl">점수</span><span id="score">0</span></div>
-      <div class="stat"><span class="lbl">최고</span><span id="best">1</span></div>
+      <div class="stat"><span class="lbl" data-i18n="hud.score">점수</span><span id="score">0</span></div>
+      <div class="stat"><span class="lbl" data-i18n="hud.best">최고</span><span id="best">1</span></div>
       <div class="stat"><span class="lbl danger"><svg class="ic"><use href="#ic-goblin"/></svg></span><span id="enemiesLeft">0</span></div>
       <div class="hud-actions">
-        <button id="pauseToggle" class="icon-btn" title="일시정지"><svg class="ic"><use id="pauseIcon" href="#ic-pause"/></svg></button>
-        <button id="soundToggle" class="icon-btn" title="소리"><svg class="ic"><use id="soundIcon" href="#ic-sound"/></svg></button>
-        <button id="bookToggle" class="icon-btn" title="마법서"><svg class="ic"><use href="#ic-book"/></svg></button>
-        <button id="shopToggle" class="icon-btn" title="상점"><svg class="ic"><use href="#ic-bag"/></svg></button>
+        <button id="pauseToggle" class="icon-btn" title="pause"><svg class="ic"><use id="pauseIcon" href="#ic-pause"/></svg></button>
+        <button id="bookToggle" class="icon-btn" title="spellbook"><svg class="ic"><use href="#ic-book"/></svg></button>
+        <button id="shopToggle" class="icon-btn" title="shop"><svg class="ic"><use href="#ic-bag"/></svg></button>
+        <button id="settingsToggle" class="icon-btn" title="settings"><svg class="ic"><use href="#ic-gear"/></svg></button>
       </div>
     </header>
 
     <!-- Gate + mana bars -->
     <div id="bars">
       <div class="bar gate">
-        <div class="bar-label"><svg class="ic sm"><use href="#ic-gate"/></svg> 성문</div>
+        <div class="bar-label"><svg class="ic sm"><use href="#ic-gate"/></svg> <span data-i18n="bar.gate">성문</span></div>
         <div class="bar-track"><div id="gateFill" class="bar-fill"></div></div>
         <div id="gateText" class="bar-val">100/100</div>
       </div>
       <div class="bar mana">
-        <div class="bar-label"><svg class="ic sm"><use href="#ic-brush"/></svg> 먹</div>
+        <div class="bar-label"><svg class="ic sm"><use href="#ic-brush"/></svg> <span data-i18n="bar.ink">먹</span></div>
         <div class="bar-track"><div id="manaFill" class="bar-fill ink"></div></div>
         <div id="manaText" class="bar-val">60/60</div>
       </div>
@@ -70,13 +73,13 @@
 
     <!-- Drawing controls -->
     <div id="drawctrl">
-      <button id="holdBtn" class="draw-btn"><svg class="ic"><use href="#ic-brush"/></svg> <span>모아 그리기</span></button>
-      <button id="clearBtn" class="draw-btn small" title="지우기"><svg class="ic"><use href="#ic-clear"/></svg></button>
-      <button id="castBtn" class="draw-btn cast"><svg class="ic"><use href="#ic-cast"/></svg> 시전</button>
+      <button id="holdBtn" class="draw-btn"><svg class="ic"><use href="#ic-brush"/></svg> <span data-i18n="btn.hold">모아 그리기</span></button>
+      <button id="clearBtn" class="draw-btn small" title="clear"><svg class="ic"><use href="#ic-clear"/></svg></button>
+      <button id="castBtn" class="draw-btn cast"><svg class="ic"><use href="#ic-cast"/></svg> <span data-i18n="btn.cast">시전</span></button>
     </div>
 
     <!-- Pause overlay -->
-    <div id="pauseOverlay"><div class="pause-card"><svg class="ic big"><use href="#ic-pause"/></svg><br>일시정지<br><span>아무 곳이나 탭하면 계속</span></div></div>
+    <div id="pauseOverlay"><div class="pause-card"><svg class="ic big"><use href="#ic-pause"/></svg><br><span data-i18n="pause.title">일시정지</span><br><span class="ptap" data-i18n="pause.tap">아무 곳이나 탭하면 계속</span></div></div>
 
     <!-- Tutorial coach -->
     <div id="tutorial">
@@ -84,7 +87,7 @@
         <div class="tut-step" id="tutCount">연습 1/3</div>
         <div class="tut-title" id="tutTitle"></div>
         <div class="tut-detail" id="tutDetail"></div>
-        <button id="tutSkip" class="tut-skip">건너뛰기</button>
+        <button id="tutSkip" class="tut-skip" data-i18n="btn.skip">건너뛰기</button>
       </div>
     </div>
 
@@ -94,35 +97,59 @@
     <!-- Upgrade shop -->
     <aside id="shop">
       <div class="shop-head">
-        <h2>대장간 · 강화</h2>
+        <h2 data-i18n="shop.title">대장간 · 강화</h2>
         <button id="shopClose" class="icon-btn"><svg class="ic"><use href="#ic-clear"/></svg></button>
       </div>
-      <p class="shop-hint">처치한 도깨비의 골드로 영구 강화 (저장됨)</p>
+      <p class="shop-hint" data-i18n="shop.hint">처치한 도깨비의 골드로 영구 강화 (저장됨)</p>
       <div id="shopList"></div>
     </aside>
 
-    <!-- Spellbook (먹 비용 + 효과 목록) -->
+    <!-- Spellbook -->
     <aside id="spellbook">
       <div class="shop-head">
-        <h2><svg class="ic"><use href="#ic-book"/></svg> 마법서</h2>
+        <h2><svg class="ic"><use href="#ic-book"/></svg> <span data-i18n="book.title">마법서</span></h2>
         <button id="bookClose" class="icon-btn"><svg class="ic"><use href="#ic-clear"/></svg></button>
       </div>
-      <p class="shop-hint">자음을 그려 마법 시전 · 모음을 이어 그리면 조합(예: ㄱ+ㅏ=가)</p>
+      <p class="shop-hint" data-i18n="book.hint">자음을 그려 마법 시전 · 모음을 이어 그리면 조합(예: ㄱ+ㅏ=가)</p>
       <div id="bookTabs">
-        <button class="book-tab active" data-tab="cons">자음 (마법)</button>
-        <button class="book-tab" data-tab="vow">모음 (조합)</button>
-        <button class="book-tab" data-tab="combo">조합 예시</button>
+        <button class="book-tab active" data-tab="cons" data-i18n="book.tabCons">자음 (마법)</button>
+        <button class="book-tab" data-tab="vow" data-i18n="book.tabVow">모음 (조합)</button>
+        <button class="book-tab" data-tab="combo" data-i18n="book.tabCombo">조합 예시</button>
       </div>
       <div id="bookBody"></div>
+    </aside>
+
+    <!-- Settings -->
+    <aside id="settings">
+      <div class="shop-head">
+        <h2><svg class="ic"><use href="#ic-gear"/></svg> <span data-i18n="set.title">설정</span></h2>
+        <button id="settingsClose" class="icon-btn"><svg class="ic"><use href="#ic-clear"/></svg></button>
+      </div>
+      <div class="set-group">
+        <div class="set-label"><svg class="ic sm"><use href="#ic-palette"/></svg> <span data-i18n="set.art">아트 스타일</span></div>
+        <div id="themeRow" class="set-options"></div>
+      </div>
+      <div class="set-group">
+        <div class="set-label"><svg class="ic sm"><use href="#ic-globe"/></svg> <span data-i18n="set.lang">언어</span></div>
+        <div id="langRow" class="set-options"></div>
+      </div>
+      <div class="set-group">
+        <div class="set-label"><svg class="ic sm"><use href="#ic-sound"/></svg> <span data-i18n="set.sound">소리</span></div>
+        <div id="soundRow" class="set-options"></div>
+      </div>
+      <div class="set-group">
+        <div class="set-label"><span data-i18n="set.vibration">진동</span></div>
+        <div id="vibRow" class="set-options"></div>
+      </div>
     </aside>
 
     <!-- Game over -->
     <div id="gameOver">
       <div class="go-card">
-        <h1>성문이 무너졌다…</h1>
+        <h1 data-i18n="go.title">성문이 무너졌다…</h1>
         <p id="goStats"></p>
-        <button id="restartBtn" class="big-btn">다시 도전</button>
-        <p class="go-tip">강화는 그대로 유지됩니다. 골드를 모아 더 강해지세요!</p>
+        <button id="restartBtn" class="big-btn" data-i18n="btn.restart">다시 도전</button>
+        <p class="go-tip" data-i18n="go.tip">강화는 그대로 유지됩니다. 골드를 모아 더 강해지세요!</p>
       </div>
     </div>
 
@@ -130,15 +157,15 @@
     <div id="title">
       <div class="title-card">
         <h1>가나다 디펜스</h1>
-        <p class="subtitle">한글을 그려 도깨비를 물리쳐라</p>
+        <p class="subtitle" data-i18n="title.sub">한글을 그려 도깨비를 물리쳐라</p>
         <div class="how">
-          <div class="how-row"><svg class="ic sm"><use href="#ic-brush"/></svg> <b>그리기</b> — 자음을 손가락으로 그리면 마법 발동! 자음 19개 + 모음 21개</div>
-          <div class="how-row"><svg class="ic sm"><use href="#ic-cast"/></svg> <b>조합</b> — 자음 뒤에 모음을 이어 그리면 글자 완성. <b>ㄱ + ㅏ = 가</b> → 더 강력!</div>
-          <div class="how-row"><b>받침까지</b> 3글자를 그리면 (예: <b>건</b>, <b>혈</b>) 화면 전체를 휩쓰는 융합 궁극기!</div>
-          <div class="how-row"><svg class="ic sm"><use href="#ic-brush"/></svg> <b>모아 그리기</b>로 시간제한 없이 글자를 만들고 <svg class="ic sm"><use href="#ic-cast"/></svg> <b>시전</b>!</div>
-          <div class="how-row"><svg class="ic sm"><use href="#ic-swirl"/></svg> <b>자동포</b>가 알아서 싸우고, <svg class="ic sm"><use href="#ic-bag"/></svg> <b>상점</b>에서 골드로 강화!</div>
+          <div class="how-row" data-i18n-html="how.1"></div>
+          <div class="how-row" data-i18n-html="how.2"></div>
+          <div class="how-row" data-i18n-html="how.3"></div>
+          <div class="how-row" data-i18n-html="how.4"></div>
+          <div class="how-row" data-i18n-html="how.5"></div>
         </div>
-        <button id="startBtn" class="big-btn">시작하기</button>
+        <button id="startBtn" class="big-btn" data-i18n="btn.start">시작하기</button>
       </div>
     </div>
   </div>

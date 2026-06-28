@@ -8,14 +8,20 @@ import { Enemy, Projectile, Particle, FloatingText } from './entities.js';
 import { Audio } from './audio.js';
 import { drawDokkaebi, drawGate, drawBackground, brushStroke, inkBlob } from './render.js';
 import { UPGRADES } from './upgrades.js';
+import { getTheme } from './themes.js';
+import { t } from './i18n.js';
 
 const SAVE_KEY = 'ganada_save_v1';
 
 const TUTORIAL_STEPS = [
-  { title: 'ㄱ + ㅏ = 가', detail: 'ㄱ(┐)을 그린 뒤 이어서 ㅏ(⊢)를 그려 \'가\'를 시전하세요.', target: '가' },
-  { title: 'ㄱ ㄱ + ㅏ = 까', detail: '같은 자음을 두 번 그리면 쌍자음! ㄱㄱ으로 ㄲ을 만들어 \'까\'.', target: '까' },
-  { title: 'ㄱ + ㅗ ㅏ = 과', detail: '모음을 이어 그리면 복합 모음! ㅗ 다음 ㅏ = ㅘ → \'과\'.', target: '과' },
+  { key: 'tut.1', target: '가' },
+  { key: 'tut.2', target: '까' },
+  { key: 'tut.3', target: '과' },
 ];
+function tutStep(i) {
+  const s = TUTORIAL_STEPS[i];
+  return { title: t(`${s.key}.title`), detail: t(`${s.key}.detail`), target: s.target };
+}
 
 export class Game {
   constructor(canvas, ui) {
@@ -207,7 +213,7 @@ export class Game {
     this.spawnElapsed = 0;
     this.spawnIndex = 0;
     Audio.wave();
-    this.ui.banner(`${w}번째 물결!`, isBoss ? '<svg class="ic"><use href="#ic-warn"/></svg> 도깨비 대장 출현' : '');
+    this.ui.banner(t('banner.wave', { w }), isBoss ? `<svg class="ic"><use href="#ic-warn"/></svg> ${t('banner.boss')}` : '');
   }
 
   spawnUpdate(dt) {
@@ -227,7 +233,7 @@ export class Game {
       this.state.wave++;
       this.bestWave = Math.max(this.bestWave || 1, this.state.wave);
       this.state.gold += 10 + this.state.wave * 2;
-      this.texts.push(new FloatingText(this.W / 2, this.H * 0.4, '물결 클리어! +보너스', '#c9a44e', 26));
+      this.texts.push(new FloatingText(this.W / 2, this.H * 0.4, t('toast.waveClear'), '#c9a44e', 26));
       this.save();
       setTimeout(() => { if (!this.gameOver && !this.tutorial.active) this.startWave(); }, 1600);
     }
@@ -256,7 +262,7 @@ export class Game {
       Audio.miss();
       this.lowInkFlash = 0.6;
       this.buzz([10, 40, 10]);
-      this.texts.push(new FloatingText(this.W / 2, this.H * 0.5, '먹이 부족!', '#bf6a5a', 22));
+      this.texts.push(new FloatingText(this.W / 2, this.H * 0.5, t('toast.noInk'), '#bf6a5a', 22));
       return false;
     }
     this.state.mana -= atk.manaCost;
@@ -303,7 +309,7 @@ export class Game {
   healGate(amount) {
     if (!amount) return;
     this.state.gateHp = Math.min(this.state.gateMax, this.state.gateHp + amount);
-    this.texts.push(new FloatingText(this.gateX, this.laneY - 80, `성문 +${amount}`, '#c9a44e', 20));
+    this.texts.push(new FloatingText(this.gateX, this.laneY - 80, t('toast.gateHeal', { n: amount }), '#c9a44e', 20));
   }
 
   // ㅏ/ㅣ — a forward lance that pierces everything in a horizontal band.
@@ -487,7 +493,7 @@ export class Game {
     this.spawnBurst(e.x, e.y, e.def.color, e.def.boss ? 50 : 18);
     this.texts.push(new FloatingText(e.x, e.y - 10, `+${e.gold}₩`, '#c79a3e', 16));
     if (this.combo > 1 && this.combo % 5 === 0) {
-      this.texts.push(new FloatingText(this.W / 2, this.H * 0.42, `${this.combo} 콤보! x${mult.toFixed(2)}`, '#c79a3e', 24));
+      this.texts.push(new FloatingText(this.W / 2, this.H * 0.42, t('toast.combo', { n: this.combo, m: mult.toFixed(2) }), '#c79a3e', 24));
       this.buzz(12);
     }
     if (e.def.boss) this.shake = Math.min(28, this.shake + 16);
@@ -571,7 +577,7 @@ export class Game {
       const dbl = DOUBLE_OF[j[0]];
       if (dbl && rc.id === j[0] && rc.score >= ACCEPT && rc.score >= rv.score) {
         j[0] = dbl;
-        return this.addJamo(null, at, `쌍 ${jamoChar(dbl)}!`);
+        return this.addJamo(null, at, t('toast.double', { j: jamoChar(dbl) }));
       }
       if (rv.id && rv.score >= ACCEPT && rv.score >= rc.score) return this.addJamo(rv.id, at);
       if (rc.id && rc.score >= ACCEPT) { // a different consonant → new syllable
@@ -586,7 +592,7 @@ export class Game {
       const comb = rv.id && COMBINE_VOWEL[`${j[1]},${rv.id}`];
       if (comb && rv.score >= ACCEPT && rv.score >= rc.score) {
         j[1] = comb;
-        return this.addJamo(null, at, `조합 ${jamoChar(comb)}!`);
+        return this.addJamo(null, at, t('toast.combine', { j: jamoChar(comb) }));
       }
       if (rc.id && rc.score >= ACCEPT) return this.addJamo(rc.id, at); // 받침
       return false;
@@ -597,12 +603,12 @@ export class Game {
     const dblJong = DOUBLE_OF[j[2]];
     if (dblJong && rc.id === j[2] && rc.score >= ACCEPT && rc.score >= rv.score) {
       j[2] = dblJong;
-      return this.addJamo(null, at, `받침 ${jamoChar(dblJong)}!`);
+      return this.addJamo(null, at, t('toast.final', { j: jamoChar(dblJong) }));
     }
     const cluster = rc.id && COMBINE_JONG[`${j[2]},${rc.id}`];
     if (cluster && rc.score >= ACCEPT && rc.score >= rv.score) {
       j[2] = cluster;
-      return this.addJamo(null, at, `겹받침 ${jamoChar(cluster)}!`);
+      return this.addJamo(null, at, t('toast.cluster', { j: jamoChar(cluster) }));
     }
     if (rc.id && rc.score >= ACCEPT) {
       this.commitSyllable();
@@ -649,7 +655,7 @@ export class Game {
     this.combo = 0;
     this.state.mana = this.state.manaMax;
     this.spawnTutorialDummies();
-    this.ui.showTutorial(TUTORIAL_STEPS[0], 0, TUTORIAL_STEPS.length);
+    this.ui.showTutorial(tutStep(0), 0, TUTORIAL_STEPS.length);
   }
 
   spawnTutorialDummies() {
@@ -666,11 +672,11 @@ export class Game {
     this.tutorial.step++;
     this.buzz(20);
     if (this.tutorial.step >= TUTORIAL_STEPS.length) {
-      this.texts.push(new FloatingText(this.W / 2, this.H * 0.5, '완료!', '#c79a3e', 30));
+      this.texts.push(new FloatingText(this.W / 2, this.H * 0.5, t('toast.done'), '#c79a3e', 30));
       this.endTutorial(false);
     } else {
-      this.texts.push(new FloatingText(this.W / 2, this.H * 0.5, '좋아요!', '#9aa7b8', 26));
-      this.ui.showTutorial(TUTORIAL_STEPS[this.tutorial.step], this.tutorial.step, TUTORIAL_STEPS.length);
+      this.texts.push(new FloatingText(this.W / 2, this.H * 0.5, t('toast.nice'), '#9aa7b8', 26));
+      this.ui.showTutorial(tutStep(this.tutorial.step), this.tutorial.step, TUTORIAL_STEPS.length);
     }
   }
 
@@ -845,15 +851,18 @@ export class Game {
     // projectiles
     for (const p of this.projectiles) this.drawProjectile(ctx, p);
 
-    // particles (ink spray — normal blending, no neon bloom)
+    // particles — themed colour; additive bloom only in glow-heavy themes
+    const theme = getTheme();
+    if (theme.additive) ctx.globalCompositeOperation = 'lighter';
     for (const p of this.particles) {
       const a = Math.max(0, p.life / p.maxLife);
-      ctx.globalAlpha = a * 0.8;
-      ctx.fillStyle = p.color;
+      ctx.globalAlpha = a * (theme.additive ? 0.9 : 0.8);
+      ctx.fillStyle = theme.fx(p.color);
       ctx.beginPath();
       ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
       ctx.fill();
     }
+    ctx.globalCompositeOperation = 'source-over';
     ctx.globalAlpha = 1;
 
     // floating text
@@ -936,49 +945,50 @@ export class Game {
     ctx.shadowBlur = 0;
     ctx.font = '12px system-ui';
     ctx.fillStyle = 'rgba(255,255,255,0.7)';
-    const hint = this.holdMode ? '계속 그리고 시전' : (this.compose.jamos.length === 1 ? '모음을 더 그려보세요' : '');
+    const hint = this.holdMode ? t('compose.keepGoing') : (this.compose.jamos.length === 1 ? t('compose.addVowel') : '');
     if (hint) ctx.fillText(hint, cx, cy + 56);
     ctx.restore();
   }
 
   drawProjectile(ctx, p) {
+    const theme = getTheme();
+    const color = theme.fx(p.attack.color);
+    const glow = theme.fx(p.attack.glow);
     ctx.save();
     // inky trail blobs
     for (let i = 0; i < p.trail.length; i++) {
       const a = i / p.trail.length;
       ctx.globalAlpha = a * 0.55;
-      ctx.fillStyle = p.attack.glow;
+      ctx.fillStyle = glow;
       inkBlob(ctx, p.trail[i].x, p.trail[i].y, 2.5 + a * 4, i * 13 + 3, 0.5, 7);
       ctx.fill();
     }
     ctx.globalAlpha = 1;
-    ctx.shadowColor = p.attack.color;
-    ctx.shadowBlur = 7;
-    ctx.fillStyle = p.attack.color;
+    ctx.shadowColor = color;
+    ctx.shadowBlur = 7 * theme.glow;
+    ctx.fillStyle = color;
     inkBlob(ctx, p.x, p.y, 8, (p.id || 1) * 7, 0.35, 9);
     ctx.fill();
     ctx.shadowBlur = 0;
-    ctx.fillStyle = p.attack.glow;
+    ctx.fillStyle = glow;
     inkBlob(ctx, p.x, p.y, 3.5, (p.id || 1) * 11 + 2, 0.4, 7);
     ctx.fill();
     ctx.restore();
   }
 
-  // The player's drawn ink — a classic bone-white brush (금니/은니 sutra ink on
-  // dark paper): a faint warm bleed, a soft body, and a slightly darker core.
+  // The player's drawn ink — styled by the active theme (bone-white sumi,
+  // neon cyan glow, or warm bronze, etc.).
   drawStroke(ctx) {
+    const s = getTheme().stroke;
     ctx.save();
-    // faint paper bleed (very low, warm)
-    ctx.shadowColor = 'rgba(232,224,200,0.5)';
-    ctx.shadowBlur = 6;
-    brushStroke(ctx, this.stroke, 15, 'rgba(225,216,193,0.18)', true);
+    ctx.shadowColor = s.bleedShadow;
+    ctx.shadowBlur = s.bleedBlur;
+    brushStroke(ctx, this.stroke, 15, s.bleed, true);
     ctx.shadowBlur = 0;
-    // ink body (warm bone white) with a faintly darker calligraphic core
-    brushStroke(ctx, this.stroke, 11, 'rgba(238,231,210,0.92)', true);
-    brushStroke(ctx, this.stroke, 5, 'rgba(150,140,118,0.5)', true);
-    // wet brush head
+    brushStroke(ctx, this.stroke, 11, s.body, true);
+    brushStroke(ctx, this.stroke, 5, s.core, true);
     const head = this.stroke[this.stroke.length - 1];
-    ctx.fillStyle = '#efe7d2';
+    ctx.fillStyle = s.head;
     inkBlob(ctx, head.x, head.y, 5.5, this.stroke.length * 3 + 1, 0.3, 8);
     ctx.fill();
     ctx.restore();
