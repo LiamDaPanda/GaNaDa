@@ -1,6 +1,6 @@
 // game.js — main loop, state, spawning, input, rendering.
 import { buildRecognizer } from './recognizer.js';
-import { ATTACKS } from './attacks.js';
+import { ATTACKS, buildSyllableSpell, composeSyllable, expectedCategory } from './attacks.js';
 import { Enemy, Projectile, Particle, FloatingText } from './entities.js';
 import { Audio } from './audio.js';
 import { drawDokkaebi, drawGate, drawBackground } from './render.js';
@@ -24,6 +24,10 @@ export class Game {
     this.stroke = [];        // current drawing points (screen space)
     this.drawing = false;
     this.lastRecognition = null;
+
+    // syllable composition buffer: jamos collected until the window lapses
+    this.compose = { jamos: [], timer: 0, x: 0, y: 0 };
+    this.COMPOSE_WINDOW = 0.55; // seconds to add the next jamo before it casts
 
     this.dpr = Math.min(window.devicePixelRatio || 1, 2);
     this.W = 0;
@@ -185,12 +189,16 @@ export class Game {
   }
 
   castAttack(key) {
-    const atk = ATTACKS[key];
-    if (!atk) return;
+    return this.castSpell(ATTACKS[key], key);
+  }
+
+  // Cast any attack object (a basic consonant spell OR a composed syllable).
+  castSpell(atk, baseKey = null) {
+    if (!atk) return false;
     if (this.state.mana < atk.manaCost) {
       Audio.miss();
       this.texts.push(new FloatingText(this.W / 2, this.H * 0.5, '먹이 부족!', '#ff8080', 22));
-      return;
+      return false;
     }
     this.state.mana -= atk.manaCost;
     const dmg = atk.baseDamage * this.state.powerMul;
@@ -198,27 +206,131 @@ export class Game {
 
     const origin = { x: this.gateX, y: this.laneY - 30 };
 
-    if (atk.kind === 'projectile') {
-      const target = this.nearestEnemy(this.W, this.laneY) || { x: this.W, y: this.laneY };
-      this.projectiles.push(new Projectile(origin.x, origin.y, target.x, target.y, atk, dmg,
-        (hx, hy) => this.explode(hx, hy, atk, dmg)));
-    } else if (atk.kind === 'chain') {
-      this.chainLightning(atk, dmg);
-    } else if (atk.kind === 'aoe') {
-      // hit front-most cluster
-      const front = this.frontmost();
-      const cx = front ? front.x : this.W * 0.6;
-      const cy = front ? front.y : this.laneY;
-      this.explode(cx, cy, atk, dmg);
-    } else if (atk.kind === 'nova') {
-      this.explode(this.gateX, this.laneY, atk, dmg);
-      this.state.gateHp = Math.min(this.state.gateMax, this.state.gateHp + atk.heal);
-      this.texts.push(new FloatingText(this.gateX, this.laneY - 80, `+${atk.heal} 🏯`, '#ffe27a', 20));
-    } else if (atk.kind === 'beam') {
-      this.dragonBeam(atk, dmg);
+    switch (atk.kind) {
+      case 'projectile': {
+        const target = this.nearestEnemy(this.W, this.laneY) || { x: this.W, y: this.laneY };
+        this.projectiles.push(new Projectile(origin.x, origin.y, target.x, target.y, atk, dmg,
+          (hx, hy) => this.explode(hx, hy, atk, dmg)));
+        break;
+      }
+      case 'chain': this.chainLightning(atk, dmg); break;
+      case 'aoe': {
+        const front = this.frontmost();
+        this.explode(front ? front.x : this.W * 0.6, front ? front.y : this.laneY, atk, dmg);
+        break;
+      }
+      case 'nova':
+        this.explode(this.gateX, this.laneY, atk, dmg);
+        this.healGate(atk.heal);
+        break;
+      case 'beam': this.dragonBeam(atk, dmg); break;
+      case 'lance': this.lanceAttack(atk, dmg); break;
+      case 'rain': this.rainAttack(atk, dmg); break;
+      case 'meteor': this.meteorAttack(atk, dmg); break;
+      case 'sweep': this.sweepAttack(atk, dmg); break;
+      case 'ultimate': this.ultimateAttack(atk, dmg); break;
+      default: this.explode(this.W * 0.6, this.laneY, atk, dmg);
     }
 
-    this.ui.flashRune(atk);
+    if (atk.heal && atk.kind !== 'nova') this.healGate(atk.heal);
+    if (atk.composed) {
+      this.texts.push(new FloatingText(this.W / 2, this.H * 0.33, atk.name, atk.glow, 24));
+    }
+    this.ui.flashRune(baseKey || (atk.jamos ? atk.jamos[0] : atk));
+    return true;
+  }
+
+  healGate(amount) {
+    if (!amount) return;
+    this.state.gateHp = Math.min(this.state.gateMax, this.state.gateHp + amount);
+    this.texts.push(new FloatingText(this.gateX, this.laneY - 80, `+${amount} 🏯`, '#ffe27a', 20));
+  }
+
+  // ㅏ/ㅣ — a forward lance that pierces everything in a horizontal band.
+  lanceAttack(atk, dmg) {
+    const bandY = this.laneY - 20;
+    const band = 78;
+    this.shake = Math.min(16, this.shake + 6);
+    for (const e of this.enemies) {
+      if (e.dead) continue;
+      if (e.x > this.gateX && Math.abs(e.y - bandY) < band + e.radius) {
+        this.damageEnemy(e, dmg, atk);
+        if (atk.knockback) e.kx = atk.knockback;
+        if (atk.freeze) e.applySlow(atk.freeze.slow, atk.freeze.duration);
+        if (atk.burn) e.applyBurn(atk.burn.dps, atk.burn.duration);
+        this.spawnBurst(e.x, e.y, atk.color, 10);
+      }
+    }
+    // streak visual sweeping right along the band
+    for (let i = 0; i < 50; i++) {
+      const t = i / 50;
+      this.particles.push(new Particle(this.gateX + t * (this.W - this.gateX), bandY + (Math.random() * 30 - 15),
+        i % 2 ? atk.glow : atk.color, { speed: 30, life: 0.35, size: 3.5, gravity: 0 }));
+    }
+  }
+
+  // ㅗ — rain: bolts fall from the sky onto several enemies.
+  rainAttack(atk, dmg) {
+    const live = this.enemies.filter((e) => !e.dead);
+    const count = atk.count || 6;
+    this.shake = Math.min(14, this.shake + 4);
+    for (let i = 0; i < count; i++) {
+      const target = live.length ? live[Math.floor(Math.random() * live.length)]
+        : { x: this.gateX + Math.random() * (this.W - this.gateX), y: this.laneY };
+      const tx = target.x + (Math.random() * 40 - 20);
+      const ty = target.y;
+      const drop = new Projectile(tx, -40 - Math.random() * 120, tx, ty, atk, dmg,
+        (hx, hy) => this.explode(hx, hy, { ...atk, kind: 'projectile', radius: 60 }, dmg));
+      this.projectiles.push(drop);
+    }
+  }
+
+  // ㅜ — meteor: one heavy impact on the front cluster.
+  meteorAttack(atk, dmg) {
+    const front = this.frontmost();
+    const tx = front ? front.x : this.W * 0.6;
+    const ty = front ? front.y : this.laneY;
+    const meteor = new Projectile(tx + 160, -160, tx, ty, atk, dmg, (hx, hy) => {
+      this.explode(hx, hy, atk, dmg);
+      this.shake = Math.min(28, this.shake + 18);
+      this.spawnBurst(hx, hy, atk.color, 60);
+    });
+    this.projectiles.push(meteor);
+  }
+
+  // ㅡ — wave: an element-colored sweep across the whole lane.
+  sweepAttack(atk, dmg) {
+    this.shake = Math.min(18, this.shake + 8);
+    for (const e of this.enemies) {
+      if (e.dead) continue;
+      this.damageEnemy(e, dmg, atk);
+      if (atk.freeze) e.applySlow(atk.freeze.slow, atk.freeze.duration);
+      if (atk.burn) e.applyBurn(atk.burn.dps, atk.burn.duration);
+      if (atk.knockback) e.kx = atk.knockback;
+      this.spawnBurst(e.x, e.y, atk.color, 12);
+    }
+    for (let i = 0; i < 70; i++) {
+      this.particles.push(new Particle(this.gateX + Math.random() * (this.W - this.gateX),
+        this.laneY - 20 + (Math.random() * 70 - 35), atk.glow, { speed: 20, life: 0.45, size: 3, gravity: 0 }));
+    }
+  }
+
+  // 받침 fusion — a screen-wide ultimate carrying both consonants' effects.
+  ultimateAttack(atk, dmg) {
+    this.shake = Math.min(30, this.shake + 24);
+    for (const e of this.enemies) {
+      if (e.dead) continue;
+      this.damageEnemy(e, dmg, atk);
+      if (atk.freeze) e.applySlow(atk.freeze.slow, atk.freeze.duration);
+      if (atk.burn) e.applyBurn(atk.burn.dps, atk.burn.duration);
+      if (atk.knockback) e.kx = atk.knockback * 1.5;
+      this.spawnBurst(e.x, e.y, atk.color, 22);
+    }
+    for (let i = 0; i < 130; i++) {
+      this.particles.push(new Particle(this.gateX + Math.random() * (this.W - this.gateX),
+        this.laneY - 20 + (Math.random() * 120 - 60), i % 2 ? atk.glow : atk.color,
+        { speed: 60, life: 0.6, size: 4, gravity: 0 }));
+    }
   }
 
   frontmost() {
@@ -354,18 +466,48 @@ export class Game {
 
   finishStroke() {
     if (this.stroke.length < 4) { this.stroke = []; return; }
-    const res = this.recognizer.recognize(this.stroke);
-    const ACCEPT = 0.74;
+    const last = this.stroke[this.stroke.length - 1];
+    const ACCEPT = 0.72;
+    const pos = this.compose.jamos.length; // 0 초성, 1 중성, 2 종성
+    const cat = expectedCategory(pos);
+    const res = this.recognizer.recognize(this.stroke, cat);
+
     if (res.id && res.score >= ACCEPT) {
-      this.castAttack(res.id);
+      this.addJamo(res.id, last);
+    } else if (pos > 0) {
+      // Wanted a vowel/받침 but it didn't fit — cast what we have so far, then
+      // try this stroke as the start of a brand-new syllable.
+      this.commitSyllable();
+      const r2 = this.recognizer.recognize(this.stroke, 'consonant');
+      if (r2.id && r2.score >= ACCEPT) this.addJamo(r2.id, last);
+      else this.missStroke(last);
     } else {
-      Audio.miss();
-      this.texts.push(new FloatingText(
-        this.stroke[this.stroke.length - 1].x,
-        this.stroke[this.stroke.length - 1].y,
-        '?', '#aaa', 28));
+      this.missStroke(last);
     }
     this.stroke = [];
+  }
+
+  addJamo(id, at) {
+    this.compose.jamos.push(id);
+    this.compose.timer = this.COMPOSE_WINDOW;
+    this.compose.x = at.x;
+    this.compose.y = at.y;
+    Audio.compose(this.compose.jamos.length);
+    // a full syllable block (초성+중성+종성) fires at once
+    if (this.compose.jamos.length >= 3) this.commitSyllable();
+  }
+
+  commitSyllable() {
+    const jamos = this.compose.jamos;
+    if (jamos.length === 0) return;
+    const spell = buildSyllableSpell(jamos);
+    this.compose = { jamos: [], timer: 0, x: this.compose.x, y: this.compose.y };
+    if (spell) this.castSpell(spell, jamos[0]);
+  }
+
+  missStroke(at) {
+    Audio.miss();
+    this.texts.push(new FloatingText(at.x, at.y, '?', '#aaa', 28));
   }
 
   restart() {
@@ -384,6 +526,7 @@ export class Game {
     }
     this.state.mana = this.state.manaMax;
     this.state.gateHp = this.state.gateMax;
+    this.compose = { jamos: [], timer: 0, x: 0, y: 0 };
     this.ui.hideGameOver();
     this.startWave();
   }
@@ -403,6 +546,12 @@ export class Game {
   update(dt) {
     // resources
     this.state.mana = Math.min(this.state.manaMax, this.state.mana + this.state.manaRegen * dt);
+
+    // composition window: cast the syllable once the player stops adding jamo
+    if (this.compose.jamos.length > 0) {
+      this.compose.timer -= dt;
+      if (this.compose.timer <= 0) this.commitSyllable();
+    }
 
     // auto turret (the "idle" damage)
     this.turretTimer -= dt;
@@ -504,6 +653,42 @@ export class Game {
     // current drawing stroke
     if (this.stroke.length > 1) this.drawStroke(ctx);
 
+    // syllable being composed (e.g. 가 assembling from ㄱ + ㅏ)
+    if (this.compose.jamos.length > 0) this.drawCompose(ctx);
+
+    ctx.restore();
+  }
+
+  drawCompose(ctx) {
+    const char = composeSyllable(this.compose.jamos);
+    const cx = this.W / 2;
+    const cy = this.H * 0.2;
+    const frac = Math.max(0, this.compose.timer / this.COMPOSE_WINDOW);
+    ctx.save();
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    // timer ring
+    ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.arc(cx, cy, 40, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.strokeStyle = '#9fe3ff';
+    ctx.beginPath();
+    ctx.arc(cx, cy, 40, -Math.PI / 2, -Math.PI / 2 + frac * Math.PI * 2);
+    ctx.stroke();
+    // the assembling syllable
+    ctx.shadowColor = '#9fe3ff';
+    ctx.shadowBlur = 16;
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 44px "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif';
+    ctx.fillText(char, cx, cy + 2);
+    ctx.shadowBlur = 0;
+    if (this.compose.jamos.length === 1) {
+      ctx.font = '12px system-ui';
+      ctx.fillStyle = 'rgba(255,255,255,0.7)';
+      ctx.fillText('모음을 더 그려보세요', cx, cy + 56);
+    }
     ctx.restore();
   }
 

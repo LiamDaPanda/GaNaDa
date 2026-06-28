@@ -61,10 +61,17 @@ function boundingBox(points) {
 
 // Non-uniform scale to a reference square. Non-uniform scaling means a tall
 // stroke and a wide stroke of the same shape both normalize the same way.
+// Exception: near-1D strokes (lines like ㅡ / ㅣ) are scaled UNIFORMLY so we
+// don't blow their thin axis — and the hand jitter on it — up to full size.
 function scaleToSquare(points) {
   const b = boundingBox(points);
   const w = b.width || 1;
   const h = b.height || 1;
+  const ratio = Math.min(w, h) / Math.max(w, h);
+  if (ratio < 0.22) {
+    const s = SQUARE_SIZE / Math.max(w, h);
+    return points.map((p) => ({ x: (p.x - b.minX) * s, y: (p.y - b.minY) * s }));
+  }
   return points.map((p) => ({
     x: (p.x - b.minX) * (SQUARE_SIZE / w),
     y: (p.y - b.minY) * (SQUARE_SIZE / h),
@@ -103,19 +110,23 @@ export class Recognizer {
     this.templates = [];
   }
 
-  // raw: array of {x,y}
-  addTemplate(id, rawPoints) {
-    this.templates.push({ id, points: normalize(rawPoints) });
+  // raw: array of {x,y}. category is 'consonant' | 'vowel'.
+  addTemplate(id, rawPoints, category = 'consonant') {
+    this.templates.push({ id, category, points: normalize(rawPoints) });
   }
 
   // Returns { id, score } where score is in [0,1]. Higher is better.
-  recognize(rawPoints) {
+  // When `category` is given, only templates of that category are considered —
+  // a syllable's vowel slot is matched against vowels only, so ㅏ is never
+  // confused with the consonant ㄴ.
+  recognize(rawPoints, category = null) {
     if (rawPoints.length < 4) return { id: null, score: 0 };
     const candidate = normalize(rawPoints);
 
     let best = Infinity;
     let bestId = null;
     for (const t of this.templates) {
+      if (category && t.category !== category) continue;
       const d = pathDistance(candidate, t.points);
       if (d < best) {
         best = d;
@@ -154,6 +165,43 @@ export const JAMO_STROKES = {
     { x: 0, y: 0 }, { x: 100, y: 0 }, { x: 100, y: 50 },
     { x: 0, y: 50 }, { x: 0, y: 100 }, { x: 100, y: 100 },
   ],
+  // ㄷ  digeut — ⊏ : top line, down the left, bottom line
+  digeut: [
+    { x: 100, y: 0 }, { x: 0, y: 0 }, { x: 0, y: 100 }, { x: 100, y: 100 },
+  ],
+  // ㅂ  bieup — ∪ : down the left, across, up the right
+  bieup: [
+    { x: 10, y: 0 }, { x: 10, y: 100 }, { x: 90, y: 100 }, { x: 90, y: 0 },
+  ],
+};
+
+// Vowel strokes (중성). Drawn as line+tick shapes (⊢ ⊣ ⊥ ⊤) plus the two bars.
+// Matched only within the vowel slot, so they never collide with consonants.
+export const VOWEL_STROKES = {
+  // ㅏ — ⊢ : vertical bar, then a tick to the RIGHT from the middle
+  a: [
+    { x: 40, y: 0 }, { x: 40, y: 100 }, { x: 40, y: 50 }, { x: 95, y: 50 },
+  ],
+  // ㅓ — ⊣ : vertical bar, then a tick to the LEFT from the middle
+  eo: [
+    { x: 60, y: 0 }, { x: 60, y: 100 }, { x: 60, y: 50 }, { x: 5, y: 50 },
+  ],
+  // ㅗ — ⊥ : horizontal bar, then a tick UP from the middle
+  o: [
+    { x: 0, y: 60 }, { x: 100, y: 60 }, { x: 50, y: 60 }, { x: 50, y: 5 },
+  ],
+  // ㅜ — ⊤ : horizontal bar, then a tick DOWN from the middle
+  u: [
+    { x: 0, y: 40 }, { x: 100, y: 40 }, { x: 50, y: 40 }, { x: 50, y: 95 },
+  ],
+  // ㅡ — a horizontal line
+  eu: [
+    { x: 5, y: 50 }, { x: 95, y: 50 },
+  ],
+  // ㅣ — a vertical line
+  i: [
+    { x: 50, y: 5 }, { x: 50, y: 95 },
+  ],
 };
 
 function circlePoints(cx, cy, r, n) {
@@ -168,6 +216,7 @@ function circlePoints(cx, cy, r, n) {
 
 export function buildRecognizer() {
   const r = new Recognizer();
-  for (const [id, pts] of Object.entries(JAMO_STROKES)) r.addTemplate(id, pts);
+  for (const [id, pts] of Object.entries(JAMO_STROKES)) r.addTemplate(id, pts, 'consonant');
+  for (const [id, pts] of Object.entries(VOWEL_STROKES)) r.addTemplate(id, pts, 'vowel');
   return r;
 }

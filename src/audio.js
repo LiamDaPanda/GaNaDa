@@ -94,6 +94,10 @@ export const Audio = {
   miss() {
     tone(200, 0.15, 'sine', 0.2, 140);
   },
+  compose(n) {
+    // rising tick as a syllable builds (초성 → 중성 → 종성)
+    tone(440 + n * 160, 0.07, 'triangle', 0.22);
+  },
   wave() {
     tone(440, 0.15, 'triangle', 0.3);
     tone(587, 0.2, 'triangle', 0.3);

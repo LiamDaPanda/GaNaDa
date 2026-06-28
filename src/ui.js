@@ -1,5 +1,5 @@
 // ui.js — DOM HUD, spell guide, upgrade shop, overlays.
-import { ATTACKS, ATTACK_ORDER } from './attacks.js';
+import { ATTACKS, ATTACK_ORDER, VOWELS, VOWEL_ORDER } from './attacks.js';
 import { UPGRADES, UPGRADE_ORDER } from './upgrades.js';
 
 export class UI {
@@ -47,6 +47,9 @@ export class UI {
   buildSpellGuide() {
     const wrap = this.el.runes;
     wrap.innerHTML = '';
+
+    const consRow = document.createElement('div');
+    consRow.className = 'rune-row';
     for (const key of ATTACK_ORDER) {
       const a = ATTACKS[key];
       const d = document.createElement('div');
@@ -57,12 +60,29 @@ export class UI {
         `<div class="rune-name">${a.name}</div>` +
         `<div class="rune-cost">먹 ${a.manaCost}</div>`;
       d.title = `${a.name} — ${a.desc}`;
-      wrap.appendChild(d);
+      consRow.appendChild(d);
     }
+    wrap.appendChild(consRow);
+
+    // vowel legend + combo hint
+    const vowRow = document.createElement('div');
+    vowRow.className = 'vowel-row';
+    vowRow.innerHTML = '<span class="combo-hint">조합 →</span>';
+    for (const key of VOWEL_ORDER) {
+      const v = VOWELS[key];
+      const s = document.createElement('span');
+      s.className = 'vowel-chip';
+      s.innerHTML = `<b>${v.jamo}</b> ${v.name}`;
+      s.title = v.desc;
+      vowRow.appendChild(s);
+    }
+    wrap.appendChild(vowRow);
   }
 
-  flashRune(atk) {
-    const key = Object.keys(ATTACKS).find((k) => ATTACKS[k] === atk);
+  flashRune(keyOrAtk) {
+    const key = typeof keyOrAtk === 'string'
+      ? keyOrAtk
+      : Object.keys(ATTACKS).find((k) => ATTACKS[k] === keyOrAtk);
     const el = this.el.runes.querySelector(`.rune[data-key="${key}"]`);
     if (!el) return;
     el.classList.remove('flash');

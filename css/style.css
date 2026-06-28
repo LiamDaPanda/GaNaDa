@@ -111,24 +111,44 @@ html, body {
   left: 0; right: 0;
   bottom: max(8px, env(safe-area-inset-bottom));
   display: flex;
-  justify-content: center;
-  gap: 6px;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
   padding: 0 8px;
   pointer-events: none;
   z-index: 4;
+}
+.rune-row {
+  display: flex;
+  justify-content: center;
+  gap: 5px;
   flex-wrap: wrap;
 }
 .rune {
   background: var(--panel);
   border: 1px solid var(--panel-line);
   border-radius: 10px;
-  padding: 5px 7px;
+  padding: 4px 6px;
   text-align: center;
-  min-width: 50px;
+  min-width: 44px;
 }
-.rune-jamo { font-size: 22px; font-weight: 800; line-height: 1; }
+.rune-jamo { font-size: 20px; font-weight: 800; line-height: 1; }
 .rune-name { font-size: 9px; opacity: 0.85; margin-top: 2px; white-space: nowrap; }
 .rune-cost { font-size: 9px; color: var(--ink); }
+.vowel-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  flex-wrap: wrap;
+  background: rgba(18, 14, 28, 0.7);
+  border: 1px solid var(--panel-line);
+  border-radius: 10px;
+  padding: 4px 8px;
+}
+.combo-hint { font-size: 10px; color: var(--gold); font-weight: 700; }
+.vowel-chip { font-size: 10px; opacity: 0.85; white-space: nowrap; }
+.vowel-chip b { color: #fff; font-size: 13px; }
 .rune.flash {
   animation: runeFlash 0.5s ease;
 }

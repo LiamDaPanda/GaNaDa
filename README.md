@@ -19,19 +19,46 @@ installs as a PWA for offline play.
    **saved** in your browser, so each run makes you stronger (idle/roguelite progression).
 5. Every **5th wave** spawns a **도깨비 대장 (boss dokkaebi)**.
 
-### The spellbook — which letter does what
+### The spellbook — consonants (자음)
 
 | Draw | Jamo | Spell | Effect |
 |------|------|-------|--------|
 | `┐`  | **ㅅ** | 화염탄 Fire Bolt | Homing bolt, explosion + burn (cheap, spammable) |
 | `7`-corner | **ㄱ** | 번개 Chain Lightning | Arcs between several enemies |
 | `L`  | **ㄴ** | 대지가르기 Earth Slam | Frontline AoE + knockback |
+| `⊏`  | **ㄷ** | 독안개 Poison Mist | AoE + damage-over-time |
+| `∪`  | **ㅂ** | 물대포 Water Cannon | Single hit + heavy knockback |
 | `○`  | **ㅇ** | 수호의 빛 Guardian Nova | Damages everything + **repairs the gate** |
 | `□`  | **ㅁ** | 서리감옥 Frost Prison | AoE damage + slow/freeze |
 | `zig-zag` | **ㄹ** | 용의 숨결 Dragon's Breath | Full-screen ultimate (most ink) |
 
 > The harder the letter is to draw, the stronger (and pricier) the spell. The on-screen rune bar
 > at the bottom is a live cheat-sheet.
+
+### Dual spells — compose a syllable (조합)
+
+Korean writes in syllable blocks: an initial consonant (초성) + a vowel (중성) + an optional
+final consonant (종성). **Draw a consonant, then a vowel, and they fuse into a syllable** like
+**가 (ㄱ + ㅏ)** that casts a stronger, vowel-shaped spell. A live syllable indicator shows the
+block assembling; it fires when you stop drawing (or after a short window).
+
+The **vowel decides the delivery shape**, the **consonant decides the element**:
+
+| Draw | Vowel | Shape |
+|------|-------|-------|
+| `⊢` | **ㅏ** | 창 — a forward piercing **lance** |
+| `⊣` | **ㅓ** | 소용돌이 — a wide **swirl** (big AoE) |
+| `⊥` | **ㅗ** | 비 — bolts **rain** from the sky |
+| `⊤` | **ㅜ** | 운석 — a crashing **meteor** |
+| `—` | **ㅡ** | 파동 — a **wave** sweeping the lane |
+| `│` | **ㅣ** | 관통 — a high-damage **pierce** |
+
+Add a **third consonant (받침)** — e.g. **각** (ㄱ + ㅏ + ㄱ) — to fuse both consonants into a
+**screen-wide ultimate** that carries both their effects.
+
+A few real Korean words are **hidden signature spells**: spell out **불** (ㅂㅜㄹ, "fire") for
+지옥불, **물** (ㅁㅜㄹ, "water") for 해일, **산** (ㅅㅏㄴ, "mountain") for 산사태 — each with a
+power bonus.
 
 ## Run it
 
