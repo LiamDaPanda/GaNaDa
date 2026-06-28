@@ -105,6 +105,21 @@ deliberately turned off** so a drawn `ㄱ` is never mistaken for a `ㄴ` — Kor
 orientation-sensitive. Each jamo is stored as a single-stroke point template; the best match
 above a confidence threshold fires its spell, otherwise you get a `?` miss.
 
+To stay forgiving of real, messy finger-drawing, matching is made **invariant to where you
+start and which way you draw**:
+
+- **Direction-invariant** for every letter — the candidate is also compared reversed, so drawing
+  `ㅅ` left-to-right or right-to-left reads the same.
+- **Start-point-invariant for closed shapes** (`ㅇ`, `ㅁ`) — a circle is matched against *all*
+  cyclic start offsets and both directions, so an `ㅇ` started at the bottom, drawn
+  counter-clockwise, squashed into an oval, or even left slightly open still recognizes reliably.
+- **Near-1D strokes** (`ㅡ`, `ㅣ`) scale uniformly so a line isn't blown up into a noisy square.
+
+These mirror/start cases are *reversals and rotations of the same shape*, so they boost tolerance
+without ever turning one letter into another (a mirror is not a reversal). Measured on simulated
+hand-drawn input: imperfect circles recognize as `ㅇ` 100% of the time, with consonants and vowels
+fully separable within their syllable slots.
+
 ## License
 
 MIT

@@ -105,14 +105,47 @@ function pathDistance(a, b) {
   return d / a.length;
 }
 
+function reversed(points) {
+  return points.slice().reverse();
+}
+
+// Average point distance with the candidate cyclically shifted by `offset`.
+function shiftedDistance(cand, tmpl, offset) {
+  const n = cand.length;
+  let d = 0;
+  for (let i = 0; i < n; i++) d += distance(cand[(i + offset) % n], tmpl[i]);
+  return d / n;
+}
+
+// Start-point-invariant match for CLOSED shapes (ㅇ, ㅁ): a circle started at
+// the bottom or drawn counter-clockwise should still match. We try every
+// cyclic start offset and both stroke directions, taking the best alignment.
+function cyclicDistance(cand, tmpl) {
+  const n = cand.length;
+  let best = Infinity;
+  for (const seq of [cand, reversed(cand)]) {
+    for (let off = 0; off < n; off += 2) {
+      const d = shiftedDistance(seq, tmpl, off);
+      if (d < best) best = d;
+    }
+  }
+  return best;
+}
+
+// Direction-invariant match for OPEN shapes: drawing ㅅ left-to-right or
+// right-to-left is the same letter, so compare both orderings.
+function openDistance(cand, tmpl) {
+  return Math.min(pathDistance(cand, tmpl), pathDistance(reversed(cand), tmpl));
+}
+
 export class Recognizer {
   constructor() {
     this.templates = [];
   }
 
-  // raw: array of {x,y}. category is 'consonant' | 'vowel'.
-  addTemplate(id, rawPoints, category = 'consonant') {
-    this.templates.push({ id, category, points: normalize(rawPoints) });
+  // raw: array of {x,y}. opts: { category, closed }.
+  addTemplate(id, rawPoints, category = 'consonant', opts = {}) {
+    this.templates.push({ id, category, closed: !!opts.closed, points: normalize(rawPoints) });
   }
 
   // Returns { id, score } where score is in [0,1]. Higher is better.
@@ -127,7 +160,7 @@ export class Recognizer {
     let bestId = null;
     for (const t of this.templates) {
       if (category && t.category !== category) continue;
-      const d = pathDistance(candidate, t.points);
+      const d = t.closed ? cyclicDistance(candidate, t.points) : openDistance(candidate, t.points);
       if (d < best) {
         best = d;
         bestId = t.id;
@@ -214,9 +247,14 @@ function circlePoints(cx, cy, r, n) {
   return pts;
 }
 
+// Closed (loop) shapes get start-point-invariant matching.
+const CLOSED = new Set(['ieung', 'mieum']);
+
 export function buildRecognizer() {
   const r = new Recognizer();
-  for (const [id, pts] of Object.entries(JAMO_STROKES)) r.addTemplate(id, pts, 'consonant');
+  for (const [id, pts] of Object.entries(JAMO_STROKES)) {
+    r.addTemplate(id, pts, 'consonant', { closed: CLOSED.has(id) });
+  }
   for (const [id, pts] of Object.entries(VOWEL_STROKES)) r.addTemplate(id, pts, 'vowel');
   return r;
 }

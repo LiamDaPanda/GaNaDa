@@ -467,7 +467,7 @@ export class Game {
   finishStroke() {
     if (this.stroke.length < 4) { this.stroke = []; return; }
     const last = this.stroke[this.stroke.length - 1];
-    const ACCEPT = 0.72;
+    const ACCEPT = 0.68;
     const pos = this.compose.jamos.length; // 0 초성, 1 중성, 2 종성
     const cat = expectedCategory(pos);
     const res = this.recognizer.recognize(this.stroke, cat);
