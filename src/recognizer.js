@@ -109,6 +109,60 @@ function reversed(points) {
   return points.slice().reverse();
 }
 
+// Moving-average smoothing so hand jitter doesn't read as fake corners.
+function smooth(points, w = 2) {
+  const n = points.length;
+  const out = new Array(n);
+  for (let i = 0; i < n; i++) {
+    let x = 0, y = 0, c = 0;
+    for (let j = -w; j <= w; j++) {
+      const idx = i + j;
+      if (idx >= 0 && idx < n) { x += points[idx].x; y += points[idx].y; c++; }
+    }
+    out[i] = { x: x / c, y: y / c };
+  }
+  return out;
+}
+
+// Count sharp corners in a normalized stroke. A square has ~4, a circle ~0,
+// ⊏ and ∪ have ~2, a line 0. Used to separate closed shapes (ㅇ vs ㅁ) and
+// keep the very flexible circle matcher from swallowing polygonal/open strokes.
+// Smoothed + wide window so it is stable under noisy finger input.
+function cornerCount(points) {
+  const pts = smooth(points, 3);
+  const n = pts.length;
+  const k = Math.max(3, Math.round(n / 14));
+  const THRESH = (60 * Math.PI) / 180;
+  const flags = new Array(n).fill(false);
+  for (let i = k; i < n - k; i++) {
+    const a = pts[i - k], b = pts[i], c = pts[i + k];
+    const v1x = b.x - a.x, v1y = b.y - a.y;
+    const v2x = c.x - b.x, v2y = c.y - b.y;
+    const m1 = Math.hypot(v1x, v1y) || 1;
+    const m2 = Math.hypot(v2x, v2y) || 1;
+    let cos = (v1x * v2x + v1y * v2y) / (m1 * m2);
+    cos = Math.max(-1, Math.min(1, cos));
+    if (Math.acos(cos) > THRESH) flags[i] = true;
+  }
+  // collapse adjacent flagged points into a single corner
+  let corners = 0;
+  for (let i = 0; i < n; ) {
+    if (flags[i]) { corners++; while (i < n && flags[i]) i++; } else i++;
+  }
+  return corners;
+}
+
+// How far apart the endpoints are, relative to stroke size (0 = closed loop).
+function openness(points) {
+  const d = distance(points[0], points[points.length - 1]);
+  let r = 0;
+  const c = points.reduce((a, p) => ({ x: a.x + p.x, y: a.y + p.y }), { x: 0, y: 0 });
+  c.x /= points.length; c.y /= points.length;
+  for (const p of points) r += distance(p, c);
+  r = (r / points.length) || 1;
+  return d / r; // ~0 closed, ~2+ for an open line
+}
+
 // Average point distance with the candidate cyclically shifted by `offset`.
 function shiftedDistance(cand, tmpl, offset) {
   const n = cand.length;
@@ -143,9 +197,12 @@ export class Recognizer {
     this.templates = [];
   }
 
-  // raw: array of {x,y}. opts: { category, closed }.
+  // raw: array of {x,y}. opts: { category, closed, round }.
   addTemplate(id, rawPoints, category = 'consonant', opts = {}) {
-    this.templates.push({ id, category, closed: !!opts.closed, points: normalize(rawPoints) });
+    const points = normalize(rawPoints);
+    this.templates.push({
+      id, category, closed: !!opts.closed, round: !!opts.round, points,
+    });
   }
 
   // Returns { id, score } where score is in [0,1]. Higher is better.
@@ -155,12 +212,23 @@ export class Recognizer {
   recognize(rawPoints, category = null) {
     if (rawPoints.length < 4) return { id: null, score: 0 };
     const candidate = normalize(rawPoints);
+    const candCorners = cornerCount(candidate);
+    const candOpen = openness(candidate);
 
     let best = Infinity;
     let bestId = null;
     for (const t of this.templates) {
       if (category && t.category !== category) continue;
-      const d = t.closed ? cyclicDistance(candidate, t.points) : openDistance(candidate, t.points);
+      let d = t.closed ? cyclicDistance(candidate, t.points) : openDistance(candidate, t.points);
+      // The circle matcher (ㅇ) is extremely flexible — start/direction
+      // invariant — so it tends to swallow squares (ㅁ), ⊏ (ㄷ) and ∪ (ㅂ).
+      // Guard it asymmetrically: a round stroke has no corners and (near-)
+      // touching endpoints, so penalize the circle by how cornered / open the
+      // candidate is. This avoids the midpoint ambiguity of a symmetric match.
+      if (t.round) {
+        d += candCorners * CORNER_W;
+        d += Math.max(0, candOpen - OPEN_TOL) * OPEN_W;
+      }
       if (d < best) {
         best = d;
         bestId = t.id;
@@ -170,6 +238,10 @@ export class Recognizer {
     return { id: bestId, score: Math.max(0, score) };
   }
 }
+
+const CORNER_W = 8;   // penalty per corner the candidate has, vs the circle
+const OPEN_TOL = 1.2;  // openness a circle tolerates (lets ~270° arcs pass)
+const OPEN_W = 8;      // penalty per unit of excess openness, vs the circle
 
 // --- Stroke templates for Korean jamo (consonants), drawn as single strokes.
 // Coordinates are arbitrary; y grows downward to match canvas space.
@@ -247,13 +319,15 @@ function circlePoints(cx, cy, r, n) {
   return pts;
 }
 
-// Closed (loop) shapes get start-point-invariant matching.
+// Closed (loop) shapes get start-point-invariant matching; the circle is also
+// flagged `round` so the corner/openness guard applies to it.
 const CLOSED = new Set(['ieung', 'mieum']);
+const ROUND = new Set(['ieung']);
 
 export function buildRecognizer() {
   const r = new Recognizer();
   for (const [id, pts] of Object.entries(JAMO_STROKES)) {
-    r.addTemplate(id, pts, 'consonant', { closed: CLOSED.has(id) });
+    r.addTemplate(id, pts, 'consonant', { closed: CLOSED.has(id), round: ROUND.has(id) });
   }
   for (const [id, pts] of Object.entries(VOWEL_STROKES)) r.addTemplate(id, pts, 'vowel');
   return r;

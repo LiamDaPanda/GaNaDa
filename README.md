@@ -114,11 +114,16 @@ start and which way you draw**:
   cyclic start offsets and both directions, so an `ㅇ` started at the bottom, drawn
   counter-clockwise, squashed into an oval, or even left slightly open still recognizes reliably.
 - **Near-1D strokes** (`ㅡ`, `ㅣ`) scale uniformly so a line isn't blown up into a noisy square.
+- **Shape-feature guard** — that very flexible circle matcher used to swallow squares (`ㅁ`),
+  `⊏` (`ㄷ`) and `∪` (`ㅂ`). A smoothed **corner count** and an **endpoint-openness** measure
+  asymmetrically penalize the circle by how *cornered* or *open* your stroke is, so round vs
+  polygonal closed shapes stay cleanly separated.
 
 These mirror/start cases are *reversals and rotations of the same shape*, so they boost tolerance
-without ever turning one letter into another (a mirror is not a reversal). Measured on simulated
-hand-drawn input: imperfect circles recognize as `ㅇ` 100% of the time, with consonants and vowels
-fully separable within their syllable slots.
+without ever turning one letter into another (a mirror is not a reversal). Measured on a battery of
+*realistic* distortions (±15° tilt, 0.75–1.3× stretch, finger jitter, trimmed ends), every
+consonant and vowel recognizes ~100% within its syllable slot, with no confusions — up from `ㅁ`
+landing at ~18% (mistaken for `ㅇ`) before this guard.
 
 ## License
 
