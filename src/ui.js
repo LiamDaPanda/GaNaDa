@@ -186,7 +186,7 @@ export class UI {
     this.el.enemiesLeft.textContent = enemiesLeft;
     const gf = Math.max(0, s.gateHp / s.gateMax);
     this.el.gateFill.style.width = `${gf * 100}%`;
-    this.el.gateFill.style.background = `hsl(${gf * 120}, 80%, 50%)`;
+    this.el.gateFill.style.background = `hsl(${gf * 120}, 44%, 46%)`;
     this.el.gateText.textContent = `${Math.ceil(s.gateHp)}/${s.gateMax}`;
     const mf = s.mana / s.manaMax;
     this.el.manaFill.style.width = `${mf * 100}%`;

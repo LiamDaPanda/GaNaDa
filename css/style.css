@@ -1,8 +1,8 @@
 :root {
-  --ink: #9fe3ff;
-  --gold: #ffd966;
-  --panel: rgba(18, 14, 28, 0.92);
-  --panel-line: rgba(255, 255, 255, 0.12);
+  --ink: #9aa7b8;   /* muted slate-blue (classic ink wash) */
+  --gold: #c79a3e;  /* muted brass / 단청 gold */
+  --panel: rgba(20, 17, 28, 0.93);
+  --panel-line: rgba(220, 210, 188, 0.14);
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
@@ -21,7 +21,7 @@
 .ic.xs { width: 13px; height: 13px; margin-right: 1px; }
 .ic.big { width: 40px; height: 40px; }
 .lbl.gold { color: var(--gold); }
-.lbl.danger { color: #ff8a6b; }
+.lbl.danger { color: #b5715a; }
 
 html, body {
   height: 100%;
@@ -114,10 +114,10 @@ html, body {
   width: 100%;
   border-radius: 7px;
   transition: width 0.15s ease;
-  background: #4caf50;
+  background: #6f8a4a;
 }
 .bar-fill.ink {
-  background: linear-gradient(90deg, #3a6ea5, var(--ink));
+  background: linear-gradient(90deg, #3c4a5e, var(--ink));
 }
 .bar.mana.low .bar-track { animation: inkLow 0.3s ease 2; }
 @keyframes inkLow {
@@ -162,9 +162,9 @@ html, body {
 .draw-btn .ic { width: 18px; height: 18px; }
 .draw-btn:active { transform: scale(0.97); }
 .draw-btn.active {
-  background: linear-gradient(90deg, #ffb347, var(--gold));
-  color: #2a1c10;
-  box-shadow: 0 0 16px rgba(255, 210, 61, 0.5);
+  background: linear-gradient(90deg, #a9803c, var(--gold));
+  color: #1f1810;
+  box-shadow: 0 0 12px rgba(170, 135, 60, 0.4);
 }
 .draw-btn.small {
   flex: 0 0 auto;
@@ -172,18 +172,18 @@ html, body {
   max-width: 48px;
   padding: 13px 0;
   font-size: 16px;
-  color: #ffb0b0;
+  color: #c79090;
 }
 .draw-btn.cast {
-  background: linear-gradient(90deg, #3a6ea5, var(--ink));
-  color: #08121c;
+  background: linear-gradient(90deg, #3c4a5e, #76859a);
+  color: #11161e;
 }
 .draw-btn.cast.ready {
   animation: castPulse 1s ease-in-out infinite;
 }
 @keyframes castPulse {
-  0%, 100% { box-shadow: 0 0 6px rgba(159, 227, 255, 0.4); }
-  50% { box-shadow: 0 0 20px rgba(159, 227, 255, 0.9); }
+  0%, 100% { box-shadow: 0 0 5px rgba(150, 165, 185, 0.3); }
+  50% { box-shadow: 0 0 14px rgba(150, 165, 185, 0.6); }
 }
 
 /* ---------- Spellbook ---------- */
@@ -213,7 +213,7 @@ html, body {
   border-radius: 12px 9px 13px 8px / 9px 13px 8px 12px;
   cursor: pointer;
 }
-.book-tab.active { background: rgba(255, 217, 102, 0.18); color: #fff; border-color: rgba(255,217,102,0.5); }
+.book-tab.active { background: rgba(199, 154, 62, 0.18); color: #fff; border-color: rgba(199,154,62,0.5); }
 #bookBody { display: flex; flex-direction: column; gap: 6px; overflow-y: auto; }
 .book-note { font-size: 11px; opacity: 0.7; margin-bottom: 4px; line-height: 1.4; }
 .book-row {
@@ -254,7 +254,7 @@ html, body {
   font-size: 30px;
   font-weight: 800;
   color: #fff;
-  text-shadow: 0 2px 12px rgba(0,0,0,0.7), 0 0 20px var(--ink);
+  text-shadow: 0 2px 12px rgba(0,0,0,0.8), 0 0 14px rgba(120,135,155,0.6);
 }
 .banner-sub { font-size: 16px; color: var(--gold); margin-top: 4px; text-shadow: 0 2px 8px rgba(0,0,0,0.8); }
 
@@ -396,7 +396,7 @@ html, body {
 
 .title-card h1 {
   font-size: 34px;
-  background: linear-gradient(90deg, #ff7b3d, var(--gold), var(--ink), #c89bff);
+  background: linear-gradient(90deg, #b5532f, var(--gold), #6f8aa0, #8a6f99);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -412,7 +412,7 @@ html, body {
   font-size: 17px;
   font-weight: 700;
   color: #1a1226;
-  background: linear-gradient(90deg, var(--gold), #ffb347);
+  background: linear-gradient(90deg, var(--gold), #a9803c);
   border: none;
   border-radius: 20px 26px 18px 24px / 26px 18px 24px 20px;
   cursor: pointer;

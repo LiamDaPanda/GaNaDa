@@ -5,10 +5,10 @@ const nextId = () => ++_id;
 
 // 도깨비 (dokkaebi) — Korean goblins. Different "types" reskin color/stats.
 export const DOKKAEBI_TYPES = {
-  blue: { name: '청도깨비', color: '#4a6fb0', horn: '#cfe0ff', hp: 30, speed: 26, gold: 5, damage: 6 },
-  red: { name: '적도깨비', color: '#b04a4a', horn: '#ffd0d0', hp: 55, speed: 22, gold: 9, damage: 10 },
-  green: { name: '독도깨비', color: '#4fa05a', horn: '#d6ffd0', hp: 42, speed: 34, gold: 8, damage: 8 },
-  boss: { name: '도깨비 대장', color: '#7a3fb0', horn: '#ecd6ff', hp: 520, speed: 14, gold: 90, damage: 26, boss: true },
+  blue: { name: '청도깨비', color: '#46566f', horn: '#d6d0bc', hp: 30, speed: 26, gold: 5, damage: 6 },
+  red: { name: '적도깨비', color: '#9c4a40', horn: '#e0ccbc', hp: 55, speed: 22, gold: 9, damage: 10 },
+  green: { name: '독도깨비', color: '#586f49', horn: '#d2dcc0', hp: 42, speed: 34, gold: 8, damage: 8 },
+  boss: { name: '도깨비 대장', color: '#5c4870', horn: '#ddd0c4', hp: 520, speed: 14, gold: 90, damage: 26, boss: true },
 };
 
 export class Enemy {

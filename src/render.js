@@ -309,20 +309,20 @@ export function drawGate(ctx, gateX, laneY, H, hpFrac, time = 0) {
   ctx.save();
   ctx.translate(wx, wy);
   ctx.scale(pulse, pulse);
-  ctx.shadowColor = `hsl(${g * 120}, 85%, 58%)`;
-  ctx.shadowBlur = 26;
+  ctx.shadowColor = `hsl(${g * 120}, 45%, 42%)`;
+  ctx.shadowBlur = 13;
   inkBlob(ctx, 0, 0, wr, 21, 0.06, 16);
-  ctx.fillStyle = 'rgba(245,239,222,0.94)';
+  ctx.fillStyle = 'rgba(238,230,210,0.95)';
   ctx.fill();
   ctx.shadowBlur = 0;
   ctx.rotate(time * 0.5);
-  ctx.fillStyle = '#c23b48';
+  ctx.fillStyle = '#9c3b34'; // 단청 muted cinnabar
   ctx.beginPath();
   ctx.arc(0, 0, wr, -Math.PI / 2, Math.PI / 2);
   ctx.arc(0, wr / 2, wr / 2, Math.PI / 2, -Math.PI / 2, true);
   ctx.arc(0, -wr / 2, wr / 2, Math.PI / 2, -Math.PI / 2);
   ctx.fill();
-  ctx.fillStyle = '#2f5aa8';
+  ctx.fillStyle = '#345877'; // 단청 muted indigo
   ctx.beginPath();
   ctx.arc(0, 0, wr, Math.PI / 2, -Math.PI / 2);
   ctx.arc(0, -wr / 2, wr / 2, -Math.PI / 2, Math.PI / 2, true);
@@ -417,13 +417,13 @@ export function drawDokkaebi(ctx, e, time = 0) {
   }
   if (e.def.boss) {
     ctx.save();
-    ctx.shadowColor = '#ffae00';
-    ctx.shadowBlur = 10;
+    ctx.shadowColor = 'rgba(160,120,50,0.5)';
+    ctx.shadowBlur = 5;
     for (let i = -2; i <= 2; i++) {
       brushStroke(ctx, [
         { x: x + i * r * 0.3, y: y - r * 0.82 },
         { x: x + i * r * 0.3 + 4, y: y - r * 1.12 },
-      ], r * 0.14, '#ffd24d', true);
+      ], r * 0.14, '#c79a3e', true);
     }
     ctx.restore();
   }
@@ -436,16 +436,16 @@ export function drawDokkaebi(ctx, e, time = 0) {
     ], r * 0.1, '#140c10', true);
   }
 
-  // glowing eyes (ink dots with halo)
+  // eyes — muted amber ink (low glow)
   for (const s of [-1, 1]) {
     ctx.save();
-    ctx.shadowColor = flash ? 'transparent' : '#ffd000';
-    ctx.shadowBlur = flash ? 0 : 8;
-    ctx.fillStyle = flash ? '#000' : '#ffe14d';
+    ctx.shadowColor = flash ? 'transparent' : 'rgba(180,140,70,0.6)';
+    ctx.shadowBlur = flash ? 0 : 3;
+    ctx.fillStyle = flash ? '#000' : '#cfa455';
     inkBlob(ctx, x + s * r * 0.32, y - r * 0.04, r * 0.18, seed + (s > 0 ? 21 : 33), 0.3, 9);
     ctx.fill();
     ctx.restore();
-    ctx.fillStyle = '#140d05';
+    ctx.fillStyle = '#181009';
     inkBlob(ctx, x + s * r * 0.34, y - r * 0.01, r * 0.07, seed + 41, 0.3, 7);
     ctx.fill();
   }
@@ -481,7 +481,7 @@ export function drawDokkaebi(ctx, e, time = 0) {
   const by = y - r - (e.def.boss ? 24 : 15);
   roundedBar(ctx, bx - 1.5, by - 1.5, bw + 3, 6, 'rgba(0,0,0,0.6)');
   const frac = Math.max(0, e.hp / e.maxHp);
-  roundedBar(ctx, bx, by, bw * frac, 4, `hsl(${frac * 120}, 75%, 52%)`);
+  roundedBar(ctx, bx, by, bw * frac, 4, `hsl(${frac * 120}, 42%, 46%)`);
   if (e.def.boss) {
     ctx.fillStyle = '#e9c887';
     ctx.font = 'bold 12px "Apple SD Gothic Neo", system-ui, sans-serif';

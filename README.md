@@ -211,6 +211,11 @@ geometry, no image assets, and no emoji in the game UI:
   displacement filter for slightly wavy, hand-inked edges; UI panels and buttons use organic
   asymmetric `border-radius` so nothing is a hard rectangle.
 
+The palette is **classic, not neon**: spells use muted 단청 / ink-pigment tones (cinnabar, muted
+indigo, moss, brass) rather than glowing colours, particles use normal (non-additive) blending,
+glows are dialled right down, and the player's drawn letters render as warm **bone-white brush ink**
+(금니/은니 sutra style) on the dark paper instead of a neon stroke.
+
 ## License
 
 MIT

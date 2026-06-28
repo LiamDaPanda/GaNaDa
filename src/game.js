@@ -227,7 +227,7 @@ export class Game {
       this.state.wave++;
       this.bestWave = Math.max(this.bestWave || 1, this.state.wave);
       this.state.gold += 10 + this.state.wave * 2;
-      this.texts.push(new FloatingText(this.W / 2, this.H * 0.4, '물결 클리어! +보너스', '#ffe27a', 26));
+      this.texts.push(new FloatingText(this.W / 2, this.H * 0.4, '물결 클리어! +보너스', '#c9a44e', 26));
       this.save();
       setTimeout(() => { if (!this.gameOver && !this.tutorial.active) this.startWave(); }, 1600);
     }
@@ -256,7 +256,7 @@ export class Game {
       Audio.miss();
       this.lowInkFlash = 0.6;
       this.buzz([10, 40, 10]);
-      this.texts.push(new FloatingText(this.W / 2, this.H * 0.5, '먹이 부족!', '#ff8080', 22));
+      this.texts.push(new FloatingText(this.W / 2, this.H * 0.5, '먹이 부족!', '#bf6a5a', 22));
       return false;
     }
     this.state.mana -= atk.manaCost;
@@ -303,7 +303,7 @@ export class Game {
   healGate(amount) {
     if (!amount) return;
     this.state.gateHp = Math.min(this.state.gateMax, this.state.gateHp + amount);
-    this.texts.push(new FloatingText(this.gateX, this.laneY - 80, `성문 +${amount}`, '#ffe27a', 20));
+    this.texts.push(new FloatingText(this.gateX, this.laneY - 80, `성문 +${amount}`, '#c9a44e', 20));
   }
 
   // ㅏ/ㅣ — a forward lance that pierces everything in a horizontal band.
@@ -485,9 +485,9 @@ export class Game {
     this.state.score += Math.round(e.maxHp * mult);
     Audio.enemyDie();
     this.spawnBurst(e.x, e.y, e.def.color, e.def.boss ? 50 : 18);
-    this.texts.push(new FloatingText(e.x, e.y - 10, `+${e.gold}₩`, '#ffd966', 16));
+    this.texts.push(new FloatingText(e.x, e.y - 10, `+${e.gold}₩`, '#c79a3e', 16));
     if (this.combo > 1 && this.combo % 5 === 0) {
-      this.texts.push(new FloatingText(this.W / 2, this.H * 0.42, `${this.combo} 콤보! x${mult.toFixed(2)}`, '#ffd23d', 24));
+      this.texts.push(new FloatingText(this.W / 2, this.H * 0.42, `${this.combo} 콤보! x${mult.toFixed(2)}`, '#c79a3e', 24));
       this.buzz(12);
     }
     if (e.def.boss) this.shake = Math.min(28, this.shake + 16);
@@ -623,7 +623,7 @@ export class Game {
     this.compose.y = at.y;
     Audio.compose(this.compose.jamos.length);
     this.buzz(toast ? 18 : 8);
-    if (toast) this.texts.push(new FloatingText(this.W / 2, this.H * 0.27, toast, '#ffd23d', 20));
+    if (toast) this.texts.push(new FloatingText(this.W / 2, this.H * 0.27, toast, '#c79a3e', 20));
     // In quick mode a full 3-jamo block fires at once; in hold mode it waits
     // so a 4th stroke can extend the 받침 into a 겹받침.
     if (!this.holdMode && this.compose.jamos.length >= 3) this.commitSyllable();
@@ -666,10 +666,10 @@ export class Game {
     this.tutorial.step++;
     this.buzz(20);
     if (this.tutorial.step >= TUTORIAL_STEPS.length) {
-      this.texts.push(new FloatingText(this.W / 2, this.H * 0.5, '완료!', '#ffd23d', 30));
+      this.texts.push(new FloatingText(this.W / 2, this.H * 0.5, '완료!', '#c79a3e', 30));
       this.endTutorial(false);
     } else {
-      this.texts.push(new FloatingText(this.W / 2, this.H * 0.5, '좋아요!', '#9fe3ff', 26));
+      this.texts.push(new FloatingText(this.W / 2, this.H * 0.5, '좋아요!', '#9aa7b8', 26));
       this.ui.showTutorial(TUTORIAL_STEPS[this.tutorial.step], this.tutorial.step, TUTORIAL_STEPS.length);
     }
   }
@@ -772,12 +772,12 @@ export class Game {
       this.turretTimer = this.state.turretRate;
       const target = this.frontmost();
       if (target) {
-        const atkLike = { color: '#9fe3ff', glow: '#ffffff', kind: 'projectile', radius: 0 };
+        const atkLike = { color: '#9aa7b8', glow: '#e8e0c8', kind: 'projectile', radius: 0 };
         this.projectiles.push(new Projectile(this.gateX, this.laneY - 30, target.x, target.y,
           atkLike, this.state.turretDamage,
           (hx, hy) => {
             const e = this.nearestEnemy(hx, hy);
-            this.spawnBurst(hx, hy, '#9fe3ff', 8);
+            this.spawnBurst(hx, hy, '#9aa7b8', 8);
             if (e && Math.hypot(e.x - hx, e.y - hy) < e.radius + 18) this.damageEnemy(e, this.state.turretDamage, atkLike);
           }));
       }
@@ -792,7 +792,7 @@ export class Game {
         this.shake = Math.min(20, this.shake + 6);
         Audio.gateHit();
         this.buzz(this.state.gateHp <= 0 ? 120 : 25);
-        this.spawnBurst(this.gateX + 10, e.y, '#ff6b4a', 14);
+        this.spawnBurst(this.gateX + 10, e.y, '#a85436', 14);
         e.dead = true;
         if (this.state.gateHp <= 0) {
           this.state.gateHp = 0;
@@ -845,17 +845,15 @@ export class Game {
     // projectiles
     for (const p of this.projectiles) this.drawProjectile(ctx, p);
 
-    // particles (additive glow)
-    ctx.globalCompositeOperation = 'lighter';
+    // particles (ink spray — normal blending, no neon bloom)
     for (const p of this.particles) {
       const a = Math.max(0, p.life / p.maxLife);
-      ctx.globalAlpha = a * 0.9;
+      ctx.globalAlpha = a * 0.8;
       ctx.fillStyle = p.color;
       ctx.beginPath();
       ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
       ctx.fill();
     }
-    ctx.globalCompositeOperation = 'source-over';
     ctx.globalAlpha = 1;
 
     // floating text
@@ -892,8 +890,8 @@ export class Game {
     ctx.translate(this.W - 64, this.H * 0.34);
     ctx.scale(pop, pop);
     ctx.textAlign = 'center';
-    ctx.fillStyle = '#ffd23d';
-    ctx.shadowColor = '#ff9c2d';
+    ctx.fillStyle = '#c79a3e';
+    ctx.shadowColor = '#9c6b32';
     ctx.shadowBlur = 12;
     ctx.font = 'bold 30px system-ui, sans-serif';
     ctx.fillText(`${this.combo}`, 0, 0);
@@ -901,12 +899,12 @@ export class Game {
     ctx.font = 'bold 13px system-ui, sans-serif';
     ctx.fillStyle = '#fff';
     ctx.fillText('콤보', 0, -24);
-    ctx.fillStyle = '#9fe3ff';
+    ctx.fillStyle = '#9aa7b8';
     ctx.fillText(`x${mult.toFixed(2)}`, 0, 18);
     // draining bar
     ctx.fillStyle = 'rgba(255,255,255,0.25)';
     ctx.fillRect(-26, 26, 52, 4);
-    ctx.fillStyle = '#ffd23d';
+    ctx.fillStyle = '#c79a3e';
     ctx.fillRect(-26, 26, 52 * fresh, 4);
     ctx.restore();
   }
@@ -925,12 +923,12 @@ export class Game {
     ctx.beginPath();
     ctx.arc(cx, cy, 40, 0, Math.PI * 2);
     ctx.stroke();
-    ctx.strokeStyle = this.holdMode ? '#ffd23d' : '#9fe3ff';
+    ctx.strokeStyle = this.holdMode ? '#c79a3e' : '#9aa7b8';
     ctx.beginPath();
     ctx.arc(cx, cy, 40, -Math.PI / 2, -Math.PI / 2 + frac * Math.PI * 2);
     ctx.stroke();
     // the assembling syllable
-    ctx.shadowColor = this.holdMode ? '#ffd23d' : '#9fe3ff';
+    ctx.shadowColor = this.holdMode ? '#c79a3e' : '#9aa7b8';
     ctx.shadowBlur = 16;
     ctx.fillStyle = '#fff';
     ctx.font = 'bold 44px "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif';
@@ -955,32 +953,33 @@ export class Game {
     }
     ctx.globalAlpha = 1;
     ctx.shadowColor = p.attack.color;
-    ctx.shadowBlur = 16;
+    ctx.shadowBlur = 7;
     ctx.fillStyle = p.attack.color;
     inkBlob(ctx, p.x, p.y, 8, (p.id || 1) * 7, 0.35, 9);
     ctx.fill();
     ctx.shadowBlur = 0;
     ctx.fillStyle = p.attack.glow;
-    inkBlob(ctx, p.x, p.y, 4, (p.id || 1) * 11 + 2, 0.4, 7);
+    inkBlob(ctx, p.x, p.y, 3.5, (p.id || 1) * 11 + 2, 0.4, 7);
     ctx.fill();
     ctx.restore();
   }
 
-  // The player's drawn ink — a tapered calligraphic brush with a soft bleed.
+  // The player's drawn ink — a classic bone-white brush (금니/은니 sutra ink on
+  // dark paper): a faint warm bleed, a soft body, and a slightly darker core.
   drawStroke(ctx) {
     ctx.save();
-    // soft ink bleed underlay
-    ctx.shadowColor = '#aee6ff';
-    ctx.shadowBlur = 16;
-    brushStroke(ctx, this.stroke, 16, 'rgba(160,220,255,0.35)', true);
+    // faint paper bleed (very low, warm)
+    ctx.shadowColor = 'rgba(232,224,200,0.5)';
+    ctx.shadowBlur = 6;
+    brushStroke(ctx, this.stroke, 15, 'rgba(225,216,193,0.18)', true);
     ctx.shadowBlur = 0;
-    // ink body (dark core like sumi ink) + bright center
-    brushStroke(ctx, this.stroke, 12, 'rgba(40,30,60,0.55)', true);
-    brushStroke(ctx, this.stroke, 8, 'rgba(245,250,255,0.95)', true);
+    // ink body (warm bone white) with a faintly darker calligraphic core
+    brushStroke(ctx, this.stroke, 11, 'rgba(238,231,210,0.92)', true);
+    brushStroke(ctx, this.stroke, 5, 'rgba(150,140,118,0.5)', true);
     // wet brush head
     const head = this.stroke[this.stroke.length - 1];
-    ctx.fillStyle = '#eaf7ff';
-    inkBlob(ctx, head.x, head.y, 6, this.stroke.length * 3 + 1, 0.3, 8);
+    ctx.fillStyle = '#efe7d2';
+    inkBlob(ctx, head.x, head.y, 5.5, this.stroke.length * 3 + 1, 0.3, 8);
     ctx.fill();
     ctx.restore();
   }
