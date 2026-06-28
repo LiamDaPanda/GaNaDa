@@ -22,6 +22,7 @@
       <div class="stat"><span class="lbl">최고</span><span id="best">1</span></div>
       <div class="hud-actions">
         <button id="soundToggle" class="icon-btn" title="소리">🔊</button>
+        <button id="bookToggle" class="icon-btn" title="마법서">📖</button>
         <button id="shopToggle" class="icon-btn" title="상점">🛒</button>
       </div>
     </header>
@@ -40,8 +41,11 @@
       </div>
     </div>
 
-    <!-- Spell guide (which letter does what) -->
-    <div id="runes"></div>
+    <!-- Drawing controls -->
+    <div id="drawctrl">
+      <button id="holdBtn" class="draw-btn">✍️ 모아 그리기</button>
+      <button id="castBtn" class="draw-btn cast">✨ 시전</button>
+    </div>
 
     <!-- Wave banner -->
     <div id="banner"></div>
@@ -54,6 +58,21 @@
       </div>
       <p class="shop-hint">처치한 도깨비의 💰로 영구 강화 (저장됨)</p>
       <div id="shopList"></div>
+    </aside>
+
+    <!-- Spellbook (먹 비용 + 효과 목록) -->
+    <aside id="spellbook">
+      <div class="shop-head">
+        <h2>📖 마법서</h2>
+        <button id="bookClose" class="icon-btn">✕</button>
+      </div>
+      <p class="shop-hint">자음을 그려 마법 시전 · 모음을 이어 그리면 조합(예: ㄱ+ㅏ=가)</p>
+      <div id="bookTabs">
+        <button class="book-tab active" data-tab="cons">자음 (마법)</button>
+        <button class="book-tab" data-tab="vow">모음 (조합)</button>
+        <button class="book-tab" data-tab="combo">조합 예시</button>
+      </div>
+      <div id="bookBody"></div>
     </aside>
 
     <!-- Game over -->
@@ -72,10 +91,10 @@
         <h1>가나다 디펜스</h1>
         <p class="subtitle">한글을 그려 도깨비를 물리쳐라</p>
         <div class="how">
-          <div class="how-row"><b>✍️ 그리기</b> 자음을 손가락으로 그리면 마법이 발동!</div>
-          <div class="how-row"><b>ㅅ</b> 화염 · <b>ㄱ</b> 번개 · <b>ㄴ</b> 대지 · <b>ㄷ</b> 독 · <b>ㅂ</b> 물 · <b>ㅇ</b> 빛 · <b>ㅁ</b> 서리 · <b>ㄹ</b> 궁극기</div>
+          <div class="how-row"><b>✍️ 그리기</b> 자음을 손가락으로 그리면 마법 발동! 자음 14개 + 모음 10개 (📖 마법서 참고)</div>
           <div class="how-row"><b>🔥 조합!</b> 자음 뒤에 모음을 이어 그리면 글자가 완성돼요. <b>ㄱ + ㅏ = 가</b> → 더 강력한 마법!</div>
-          <div class="how-row"><b>받침까지</b> 3글자를 그리면 (예: <b>각</b>) 화면 전체를 휩쓰는 융합 궁극기!</div>
+          <div class="how-row"><b>받침까지</b> 3글자를 그리면 (예: <b>건</b>, <b>혈</b>) 화면 전체를 휩쓰는 융합 궁극기!</div>
+          <div class="how-row"><b>✍️ 모아 그리기</b> 버튼을 누르면 시간제한 없이 천천히 글자를 만들고 <b>✨시전</b>으로 발사!</div>
           <div class="how-row"><b>🌀 자동포</b>가 알아서 싸우고, <b>🛒 상점</b>에서 💰로 영구 강화!</div>
         </div>
         <button id="startBtn" class="big-btn">시작하기</button>

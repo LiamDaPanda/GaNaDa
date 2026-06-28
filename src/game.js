@@ -28,6 +28,7 @@ export class Game {
     // syllable composition buffer: jamos collected until the window lapses
     this.compose = { jamos: [], timer: 0, x: 0, y: 0 };
     this.COMPOSE_WINDOW = 0.55; // seconds to add the next jamo before it casts
+    this.holdMode = false;      // when on, the syllable waits for the 시전 button
 
     this.dpr = Math.min(window.devicePixelRatio || 1, 2);
     this.W = 0;
@@ -505,6 +506,25 @@ export class Game {
     if (spell) this.castSpell(spell, jamos[0]);
   }
 
+  // "✍️ 모아 그리기" — enter hold mode and start a fresh syllable, so the
+  // player can draw several strokes (e.g. ㅎ+ㅕ+ㄹ = 혈) without the timer
+  // firing. Pressing it again restarts the current syllable.
+  beginHold() {
+    this.holdMode = true;
+    this.compose = { jamos: [], timer: 0, x: this.W / 2, y: this.H * 0.2 };
+    Audio.compose(0);
+    if (this.ui) this.ui.setHold(true);
+  }
+
+  // "✨ 시전" — fire whatever is composed and leave hold mode.
+  castComposed() {
+    const had = this.compose.jamos.length;
+    this.commitSyllable();
+    this.holdMode = false;
+    if (this.ui) this.ui.setHold(false);
+    if (!had) Audio.miss();
+  }
+
   missStroke(at) {
     Audio.miss();
     this.texts.push(new FloatingText(at.x, at.y, '?', '#aaa', 28));
@@ -527,6 +547,8 @@ export class Game {
     this.state.mana = this.state.manaMax;
     this.state.gateHp = this.state.gateMax;
     this.compose = { jamos: [], timer: 0, x: 0, y: 0 };
+    this.holdMode = false;
+    if (this.ui) this.ui.setHold(false);
     this.ui.hideGameOver();
     this.startWave();
   }
@@ -547,8 +569,9 @@ export class Game {
     // resources
     this.state.mana = Math.min(this.state.manaMax, this.state.mana + this.state.manaRegen * dt);
 
-    // composition window: cast the syllable once the player stops adding jamo
-    if (this.compose.jamos.length > 0) {
+    // composition window: cast the syllable once the player stops adding jamo.
+    // In hold mode the timer is frozen — the player fires with the 시전 button.
+    if (!this.holdMode && this.compose.jamos.length > 0) {
       this.compose.timer -= dt;
       if (this.compose.timer <= 0) this.commitSyllable();
     }
@@ -654,7 +677,7 @@ export class Game {
     if (this.stroke.length > 1) this.drawStroke(ctx);
 
     // syllable being composed (e.g. 가 assembling from ㄱ + ㅏ)
-    if (this.compose.jamos.length > 0) this.drawCompose(ctx);
+    if (this.compose.jamos.length > 0 || this.holdMode) this.drawCompose(ctx);
 
     ctx.restore();
   }
@@ -663,32 +686,31 @@ export class Game {
     const char = composeSyllable(this.compose.jamos);
     const cx = this.W / 2;
     const cy = this.H * 0.2;
-    const frac = Math.max(0, this.compose.timer / this.COMPOSE_WINDOW);
+    const frac = this.holdMode ? 1 : Math.max(0, this.compose.timer / this.COMPOSE_WINDOW);
     ctx.save();
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    // timer ring
+    // ring (full + amber in hold mode, countdown in quick mode)
     ctx.strokeStyle = 'rgba(255,255,255,0.25)';
     ctx.lineWidth = 4;
     ctx.beginPath();
     ctx.arc(cx, cy, 40, 0, Math.PI * 2);
     ctx.stroke();
-    ctx.strokeStyle = '#9fe3ff';
+    ctx.strokeStyle = this.holdMode ? '#ffd23d' : '#9fe3ff';
     ctx.beginPath();
     ctx.arc(cx, cy, 40, -Math.PI / 2, -Math.PI / 2 + frac * Math.PI * 2);
     ctx.stroke();
     // the assembling syllable
-    ctx.shadowColor = '#9fe3ff';
+    ctx.shadowColor = this.holdMode ? '#ffd23d' : '#9fe3ff';
     ctx.shadowBlur = 16;
     ctx.fillStyle = '#fff';
     ctx.font = 'bold 44px "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif';
-    ctx.fillText(char, cx, cy + 2);
+    ctx.fillText(char || '…', cx, cy + 2);
     ctx.shadowBlur = 0;
-    if (this.compose.jamos.length === 1) {
-      ctx.font = '12px system-ui';
-      ctx.fillStyle = 'rgba(255,255,255,0.7)';
-      ctx.fillText('모음을 더 그려보세요', cx, cy + 56);
-    }
+    ctx.font = '12px system-ui';
+    ctx.fillStyle = 'rgba(255,255,255,0.7)';
+    const hint = this.holdMode ? '계속 그리고 ✨시전' : (this.compose.jamos.length === 1 ? '모음을 더 그려보세요' : '');
+    if (hint) ctx.fillText(hint, cx, cy + 56);
     ctx.restore();
   }
 

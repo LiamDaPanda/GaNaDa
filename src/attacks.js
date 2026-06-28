@@ -102,6 +102,89 @@ export const ATTACKS = {
     knockback: 55,
     desc: '단일 폭발 + 강한 넉백',
   },
+  jieut: {
+    jamo: 'ㅈ',
+    name: '질풍참',
+    nameEn: 'Gale Slash',
+    element: 'wind',
+    color: '#7fe3c0',
+    glow: '#dffff4',
+    manaCost: 16,
+    baseDamage: 28,
+    radius: 80,
+    kind: 'lance',
+    knockback: 40,
+    desc: '전방 베기 + 넉백',
+  },
+  chieut: {
+    jamo: 'ㅊ',
+    name: '회오리',
+    nameEn: 'Tornado',
+    element: 'wind',
+    color: '#8fe0d0',
+    glow: '#e6fff8',
+    manaCost: 26,
+    baseDamage: 26,
+    radius: 170,
+    kind: 'aoe',
+    knockback: 50,
+    desc: '광역 회오리 + 넉백',
+  },
+  kieuk: {
+    jamo: 'ㅋ',
+    name: '암흑탄',
+    nameEn: 'Dark Bolt',
+    element: 'shadow',
+    color: '#a06fd6',
+    glow: '#e8d6ff',
+    manaCost: 22,
+    baseDamage: 40,
+    radius: 90,
+    kind: 'projectile',
+    desc: '고위력 단일 폭발',
+  },
+  tieut: {
+    jamo: 'ㅌ',
+    name: '빛기둥',
+    nameEn: 'Light Pillar',
+    element: 'light',
+    color: '#ffe9a0',
+    glow: '#fffae0',
+    manaCost: 26,
+    baseDamage: 22,
+    radius: 1,
+    kind: 'rain',
+    count: 5,
+    desc: '하늘에서 떨어지는 빛기둥',
+  },
+  pieup: {
+    jamo: 'ㅍ',
+    name: '폭풍',
+    nameEn: 'Tempest',
+    element: 'wind',
+    color: '#9fd8e8',
+    glow: '#eaf8ff',
+    manaCost: 30,
+    baseDamage: 30,
+    radius: 999,
+    kind: 'sweep',
+    knockback: 30,
+    desc: '진로를 휩쓰는 폭풍',
+  },
+  hieut: {
+    jamo: 'ㅎ',
+    name: '태양폭발',
+    nameEn: 'Solar Flare',
+    element: 'sun',
+    color: '#ffd23d',
+    glow: '#fff3c4',
+    manaCost: 34,
+    baseDamage: 30,
+    radius: 230,
+    kind: 'nova',
+    heal: 16,
+    desc: '전체 피해 + 성문 수리',
+  },
   rieul: {
     jamo: 'ㄹ',
     name: '용의 숨결',
@@ -118,7 +201,10 @@ export const ATTACKS = {
   },
 };
 
-export const ATTACK_ORDER = ['siot', 'giyeok', 'nieun', 'digeut', 'bieup', 'ieung', 'mieum', 'rieul'];
+export const ATTACK_ORDER = [
+  'giyeok', 'nieun', 'digeut', 'rieul', 'mieum', 'bieup', 'siot',
+  'ieung', 'jieut', 'chieut', 'kieuk', 'tieut', 'pieup', 'hieut',
+];
 
 // --- Vowels (중성). A vowel can't be cast alone — it *shapes* the consonant's
 // element into a combined syllable spell (e.g. ㄱ + ㅏ = 가). Each vowel sets
@@ -148,21 +234,47 @@ export const VOWELS = {
     jamo: 'ㅣ', name: '관통', kind: 'lance', dmgMul: 2.3, manaCost: 11, radiusMul: 1,
     desc: '강력한 관통 일격',
   },
+  // Iotized vowels (two ticks) = stronger "double" versions of their base.
+  ya: { // ㅑ — twin lance
+    jamo: 'ㅑ', name: '쌍창', kind: 'lance', dmgMul: 2.7, manaCost: 16, radiusMul: 1,
+    desc: '전방 강화 관통 (강)',
+  },
+  yeo: { // ㅕ — greater swirl
+    jamo: 'ㅕ', name: '대소용돌이', kind: 'aoe', dmgMul: 2.4, manaCost: 16, radiusMul: 2.1,
+    desc: '초대형 광역 폭발 (강)',
+  },
+  yo: { // ㅛ — downpour
+    jamo: 'ㅛ', name: '폭우', kind: 'rain', dmgMul: 1.8, manaCost: 18, radiusMul: 1, count: 10,
+    desc: '하늘에서 쏟아지는 폭우 (강)',
+  },
+  yu: { // ㅠ — meteor shower
+    jamo: 'ㅠ', name: '운석우', kind: 'meteor', dmgMul: 3.3, manaCost: 20, radiusMul: 2.1,
+    desc: '초대형 운석 강타 (강)',
+  },
 };
 
-export const VOWEL_ORDER = ['a', 'eo', 'o', 'u', 'eu', 'i'];
+export const VOWEL_ORDER = ['a', 'ya', 'eo', 'yeo', 'o', 'yo', 'u', 'yu', 'eu', 'i'];
 
 // Korean element display names (for composed spell labels).
 export const ELEMENT_NAME = {
   fire: '화염', lightning: '번개', earth: '대지', poison: '독',
   water: '물', holy: '빛', ice: '서리', arcane: '용',
+  wind: '바람', shadow: '암흑', light: '섬광', sun: '태양',
 };
 
 // --- Hangul composition: build the precomposed syllable character so the HUD
 // can show "가" assembling in real time. Indices follow Unicode U+AC00 rules.
-const CHO_INDEX = { giyeok: 0, nieun: 2, digeut: 3, rieul: 5, mieum: 6, bieup: 7, siot: 9, ieung: 11 };
-const JUNG_INDEX = { a: 0, eo: 4, o: 8, u: 13, eu: 18, i: 20 };
-const JONG_INDEX = { giyeok: 1, nieun: 4, digeut: 7, rieul: 8, mieum: 16, bieup: 17, siot: 19, ieung: 21 };
+const CHO_INDEX = {
+  giyeok: 0, nieun: 2, digeut: 3, rieul: 5, mieum: 6, bieup: 7, siot: 9,
+  ieung: 11, jieut: 12, chieut: 14, kieuk: 15, tieut: 16, pieup: 17, hieut: 18,
+};
+const JUNG_INDEX = {
+  a: 0, ya: 2, eo: 4, yeo: 6, o: 8, yo: 12, u: 13, yu: 17, eu: 18, i: 20,
+};
+const JONG_INDEX = {
+  giyeok: 1, nieun: 4, digeut: 7, rieul: 8, mieum: 16, bieup: 17, siot: 19,
+  ieung: 21, jieut: 22, chieut: 23, kieuk: 24, tieut: 25, pieup: 26, hieut: 27,
+};
 
 export function composeSyllable(jamos) {
   if (jamos.length === 0) return '';

@@ -1,5 +1,5 @@
-// ui.js — DOM HUD, spell guide, upgrade shop, overlays.
-import { ATTACKS, ATTACK_ORDER, VOWELS, VOWEL_ORDER } from './attacks.js';
+// ui.js — DOM HUD, spellbook, upgrade shop, drawing controls, overlays.
+import { ATTACKS, ATTACK_ORDER, VOWELS, VOWEL_ORDER, ELEMENT_NAME, composeSyllable } from './attacks.js';
 import { UPGRADES, UPGRADE_ORDER } from './upgrades.js';
 
 export class UI {
@@ -15,23 +15,48 @@ export class UI {
       manaText: document.getElementById('manaText'),
       banner: document.getElementById('banner'),
       shop: document.getElementById('shop'),
-      runes: document.getElementById('runes'),
+      spellbook: document.getElementById('spellbook'),
+      bookBody: document.getElementById('bookBody'),
+      holdBtn: document.getElementById('holdBtn'),
+      castBtn: document.getElementById('castBtn'),
       gameOver: document.getElementById('gameOver'),
       goStats: document.getElementById('goStats'),
     };
     this.bannerTimer = null;
-    this.buildSpellGuide();
+    this.bookTab = 'cons';
+    this.buildSpellbook();
   }
 
   bind(game) {
     this.game = game;
     document.getElementById('shopToggle').addEventListener('click', () => {
+      this.el.spellbook.classList.remove('open');
       this.el.shop.classList.toggle('open');
       if (this.el.shop.classList.contains('open')) this.refreshShop();
     });
     document.getElementById('shopClose').addEventListener('click', () => {
       this.el.shop.classList.remove('open');
     });
+    document.getElementById('bookToggle').addEventListener('click', () => {
+      this.el.shop.classList.remove('open');
+      this.el.spellbook.classList.toggle('open');
+    });
+    document.getElementById('bookClose').addEventListener('click', () => {
+      this.el.spellbook.classList.remove('open');
+    });
+    document.querySelectorAll('.book-tab').forEach((t) => {
+      t.addEventListener('click', () => {
+        document.querySelectorAll('.book-tab').forEach((x) => x.classList.remove('active'));
+        t.classList.add('active');
+        this.bookTab = t.dataset.tab;
+        this.buildSpellbook();
+      });
+    });
+
+    // Drawing controls
+    this.el.holdBtn.addEventListener('click', () => game.beginHold());
+    this.el.castBtn.addEventListener('click', () => game.castComposed());
+
     document.getElementById('restartBtn').addEventListener('click', () => game.restart());
     const sound = document.getElementById('soundToggle');
     sound.addEventListener('click', () => {
@@ -44,49 +69,60 @@ export class UI {
     this.refreshShop();
   }
 
-  buildSpellGuide() {
-    const wrap = this.el.runes;
-    wrap.innerHTML = '';
-
-    const consRow = document.createElement('div');
-    consRow.className = 'rune-row';
-    for (const key of ATTACK_ORDER) {
-      const a = ATTACKS[key];
-      const d = document.createElement('div');
-      d.className = 'rune';
-      d.dataset.key = key;
-      d.innerHTML =
-        `<div class="rune-jamo" style="color:${a.color}">${a.jamo}</div>` +
-        `<div class="rune-name">${a.name}</div>` +
-        `<div class="rune-cost">먹 ${a.manaCost}</div>`;
-      d.title = `${a.name} — ${a.desc}`;
-      consRow.appendChild(d);
-    }
-    wrap.appendChild(consRow);
-
-    // vowel legend + combo hint
-    const vowRow = document.createElement('div');
-    vowRow.className = 'vowel-row';
-    vowRow.innerHTML = '<span class="combo-hint">조합 →</span>';
-    for (const key of VOWEL_ORDER) {
-      const v = VOWELS[key];
-      const s = document.createElement('span');
-      s.className = 'vowel-chip';
-      s.innerHTML = `<b>${v.jamo}</b> ${v.name}`;
-      s.title = v.desc;
-      vowRow.appendChild(s);
-    }
-    wrap.appendChild(vowRow);
+  setHold(on) {
+    this.el.holdBtn.classList.toggle('active', on);
+    this.el.holdBtn.textContent = on ? '✍️ 그리는 중…' : '✍️ 모아 그리기';
+    this.el.castBtn.classList.toggle('ready', on);
   }
 
+  buildSpellbook() {
+    const body = this.el.bookBody;
+    body.innerHTML = '';
+    if (this.bookTab === 'cons') {
+      for (const key of ATTACK_ORDER) {
+        const a = ATTACKS[key];
+        body.appendChild(rowEl(a.jamo, a.color, a.name, a.desc, `먹 ${a.manaCost}`, key));
+      }
+    } else if (this.bookTab === 'vow') {
+      const note = document.createElement('p');
+      note.className = 'book-note';
+      note.textContent = '모음은 단독으로 쓸 수 없어요. 자음 뒤에 이어 그리면 마법의 형태가 바뀝니다.';
+      body.appendChild(note);
+      for (const key of VOWEL_ORDER) {
+        const v = VOWELS[key];
+        body.appendChild(rowEl(v.jamo, '#9fe3ff', v.name, v.desc, `+먹 ${v.manaCost}`));
+      }
+    } else {
+      const examples = [
+        ['giyeok', 'a'], ['siot', 'a', 'nieun'], ['bieup', 'u', 'rieul'],
+        ['mieum', 'u', 'rieul'], ['giyeok', 'eo', 'nieun'], ['hieut', 'yeo', 'rieul'],
+        ['ieung', 'yo'], ['rieul', 'ya'],
+      ];
+      const note = document.createElement('p');
+      note.className = 'book-note';
+      note.innerHTML = '자음+모음(+받침)을 이어 그려 글자를 완성하세요. 글자가 길수록 강력!';
+      body.appendChild(note);
+      for (const jamos of examples) {
+        const char = composeSyllable(jamos);
+        const cons = ATTACKS[jamos[0]];
+        const seq = jamos.map((j) => (ATTACKS[j] || VOWELS[j]).jamo).join(' + ');
+        const tier = jamos.length >= 3 ? '융합 궁극기' : '조합 마법';
+        body.appendChild(rowEl(char, cons.color, `${seq}`, `${ELEMENT_NAME[cons.element] || ''} 계열 · ${tier}`, ''));
+      }
+    }
+  }
+
+  // flashRune kept as a safe no-op hook (the old on-screen rune bar is gone);
+  // a matching spellbook row pulses if the book is open.
   flashRune(keyOrAtk) {
+    if (!this.el.spellbook.classList.contains('open')) return;
     const key = typeof keyOrAtk === 'string'
       ? keyOrAtk
       : Object.keys(ATTACKS).find((k) => ATTACKS[k] === keyOrAtk);
-    const el = this.el.runes.querySelector(`.rune[data-key="${key}"]`);
+    const el = this.el.bookBody.querySelector(`.book-row[data-key="${key}"]`);
     if (!el) return;
     el.classList.remove('flash');
-    void el.offsetWidth; // reflow to restart animation
+    void el.offsetWidth;
     el.classList.add('flash');
   }
 
@@ -158,4 +194,16 @@ export class UI {
   hideGameOver() {
     this.el.gameOver.classList.remove('show');
   }
+}
+
+function rowEl(jamo, color, name, desc, cost, key = '') {
+  const row = document.createElement('div');
+  row.className = 'book-row';
+  if (key) row.dataset.key = key;
+  row.innerHTML =
+    `<div class="book-jamo" style="color:${color}">${jamo}</div>` +
+    `<div class="book-main"><div class="book-name">${name}</div>` +
+    `<div class="book-desc">${desc}</div></div>` +
+    (cost ? `<div class="book-cost">${cost}</div>` : '');
+  return row;
 }

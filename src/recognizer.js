@@ -202,6 +202,7 @@ export class Recognizer {
     const points = normalize(rawPoints);
     this.templates.push({
       id, category, closed: !!opts.closed, round: !!opts.round, points,
+      corners: cornerCount(points),
     });
   }
 
@@ -220,11 +221,14 @@ export class Recognizer {
     for (const t of this.templates) {
       if (category && t.category !== category) continue;
       let d = t.closed ? cyclicDistance(candidate, t.points) : openDistance(candidate, t.points);
+      // General shape feature: how many sharp corners the stroke has. This
+      // separates same-family shapes that the point metric blurs — Z (ㅈ, 2)
+      // vs the ㄹ zigzag (4), or ㅎ's looped stroke (corners) vs ㅇ (0).
+      d += Math.abs(candCorners - t.corners) * GEN_CORNER_W;
       // The circle matcher (ㅇ) is extremely flexible — start/direction
       // invariant — so it tends to swallow squares (ㅁ), ⊏ (ㄷ) and ∪ (ㅂ).
-      // Guard it asymmetrically: a round stroke has no corners and (near-)
-      // touching endpoints, so penalize the circle by how cornered / open the
-      // candidate is. This avoids the midpoint ambiguity of a symmetric match.
+      // Guard it asymmetrically: a round stroke has (near-) touching endpoints,
+      // so additionally penalize the circle by how open the candidate is.
       if (t.round) {
         d += candCorners * CORNER_W;
         d += Math.max(0, candOpen - OPEN_TOL) * OPEN_W;
@@ -239,7 +243,8 @@ export class Recognizer {
   }
 }
 
-const CORNER_W = 8;   // penalty per corner the candidate has, vs the circle
+const GEN_CORNER_W = 5; // penalty per corner-count mismatch (all templates)
+const CORNER_W = 6;   // extra corner penalty vs the circle specifically
 const OPEN_TOL = 1.2;  // openness a circle tolerates (lets ~270° arcs pass)
 const OPEN_W = 8;      // penalty per unit of excess openness, vs the circle
 
@@ -278,6 +283,35 @@ export const JAMO_STROKES = {
   bieup: [
     { x: 10, y: 0 }, { x: 10, y: 100 }, { x: 90, y: 100 }, { x: 90, y: 0 },
   ],
+  // ㅈ  jieut — Z
+  jieut: [
+    { x: 0, y: 0 }, { x: 100, y: 0 }, { x: 0, y: 100 }, { x: 100, y: 100 },
+  ],
+  // ㅊ  chieut — Z with a leading cap stroke
+  chieut: [
+    { x: 35, y: 0 }, { x: 70, y: 14 }, { x: 8, y: 30 }, { x: 92, y: 30 },
+    { x: 8, y: 100 }, { x: 92, y: 100 },
+  ],
+  // ㅋ  kieuk — ㄱ with a middle bar (┐ + mid tick)
+  kieuk: [
+    { x: 0, y: 0 }, { x: 100, y: 0 }, { x: 100, y: 50 },
+    { x: 45, y: 50 }, { x: 100, y: 50 }, { x: 100, y: 100 },
+  ],
+  // ㅌ  tieut — E (⊏ with a middle bar)
+  tieut: [
+    { x: 100, y: 0 }, { x: 0, y: 0 }, { x: 0, y: 50 }, { x: 100, y: 50 },
+    { x: 0, y: 50 }, { x: 0, y: 100 }, { x: 100, y: 100 },
+  ],
+  // ㅍ  pieup — Π (top bar + two legs)
+  pieup: [
+    { x: 15, y: 100 }, { x: 15, y: 30 }, { x: 85, y: 30 }, { x: 85, y: 100 },
+  ],
+  // ㅎ  hieut — top bar, then a tail into a loop (the actual ㅎ shape)
+  hieut: [
+    { x: 30, y: 2 }, { x: 70, y: 2 }, { x: 50, y: 6 }, { x: 50, y: 30 },
+    { x: 76, y: 40 }, { x: 76, y: 70 }, { x: 50, y: 82 }, { x: 24, y: 70 },
+    { x: 24, y: 40 }, { x: 50, y: 30 },
+  ],
 };
 
 // Vowel strokes (중성). Drawn as line+tick shapes (⊢ ⊣ ⊥ ⊤) plus the two bars.
@@ -306,6 +340,26 @@ export const VOWEL_STROKES = {
   // ㅣ — a vertical line
   i: [
     { x: 50, y: 5 }, { x: 50, y: 95 },
+  ],
+  // ㅑ — vertical bar with TWO right ticks
+  ya: [
+    { x: 40, y: 0 }, { x: 40, y: 100 }, { x: 40, y: 33 }, { x: 95, y: 33 },
+    { x: 40, y: 66 }, { x: 95, y: 66 },
+  ],
+  // ㅕ — vertical bar with TWO left ticks
+  yeo: [
+    { x: 60, y: 0 }, { x: 60, y: 100 }, { x: 60, y: 33 }, { x: 5, y: 33 },
+    { x: 60, y: 66 }, { x: 5, y: 66 },
+  ],
+  // ㅛ — horizontal bar with TWO up ticks
+  yo: [
+    { x: 0, y: 60 }, { x: 100, y: 60 }, { x: 33, y: 60 }, { x: 33, y: 5 },
+    { x: 66, y: 60 }, { x: 66, y: 5 },
+  ],
+  // ㅠ — horizontal bar with TWO down ticks
+  yu: [
+    { x: 0, y: 40 }, { x: 100, y: 40 }, { x: 33, y: 40 }, { x: 33, y: 95 },
+    { x: 66, y: 40 }, { x: 66, y: 95 },
   ],
 };
 

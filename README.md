@@ -21,19 +21,28 @@ installs as a PWA for offline play.
 
 ### The spellbook — consonants (자음)
 
+All **14 basic consonants** are spells. Draw the single-stroke gesture shown in the in-game
+**📖 마법서 (Spellbook)** menu, which lists every letter's ink cost and effect.
+
 | Draw | Jamo | Spell | Effect |
 |------|------|-------|--------|
-| `┐`  | **ㅅ** | 화염탄 Fire Bolt | Homing bolt, explosion + burn (cheap, spammable) |
 | `7`-corner | **ㄱ** | 번개 Chain Lightning | Arcs between several enemies |
 | `L`  | **ㄴ** | 대지가르기 Earth Slam | Frontline AoE + knockback |
 | `⊏`  | **ㄷ** | 독안개 Poison Mist | AoE + damage-over-time |
-| `∪`  | **ㅂ** | 물대포 Water Cannon | Single hit + heavy knockback |
-| `○`  | **ㅇ** | 수호의 빛 Guardian Nova | Damages everything + **repairs the gate** |
-| `□`  | **ㅁ** | 서리감옥 Frost Prison | AoE damage + slow/freeze |
 | `zig-zag` | **ㄹ** | 용의 숨결 Dragon's Breath | Full-screen ultimate (most ink) |
+| `□`  | **ㅁ** | 서리감옥 Frost Prison | AoE damage + slow/freeze |
+| `∪`  | **ㅂ** | 물대포 Water Cannon | Single hit + heavy knockback |
+| `∧`  | **ㅅ** | 화염탄 Fire Bolt | Homing bolt, explosion + burn (cheap, spammable) |
+| `○`  | **ㅇ** | 수호의 빛 Guardian Nova | Damages everything + **repairs the gate** |
+| `Z`  | **ㅈ** | 질풍참 Gale Slash | Forward slash + knockback |
+| `Z`+cap | **ㅊ** | 회오리 Tornado | Wide AoE + knockback |
+| `┐`+bar | **ㅋ** | 암흑탄 Dark Bolt | High-damage single bolt |
+| `E`  | **ㅌ** | 빛기둥 Light Pillar | Pillars fall from the sky |
+| `Π`  | **ㅍ** | 폭풍 Tempest | Lane-wide sweep |
+| balloon | **ㅎ** | 태양폭발 Solar Flare | Full damage + gate repair |
 
-> The harder the letter is to draw, the stronger (and pricier) the spell. The on-screen rune bar
-> at the bottom is a live cheat-sheet.
+> The harder the letter is to draw, the stronger (and pricier) the spell. The exact stroke for each
+> letter is shown in the **📖 마법서** menu (top bar).
 
 ### Dual spells — compose a syllable (조합)
 
@@ -42,19 +51,31 @@ final consonant (종성). **Draw a consonant, then a vowel, and they fuse into a
 **가 (ㄱ + ㅏ)** that casts a stronger, vowel-shaped spell. A live syllable indicator shows the
 block assembling; it fires when you stop drawing (or after a short window).
 
-The **vowel decides the delivery shape**, the **consonant decides the element**:
+The **vowel decides the delivery shape**, the **consonant decides the element**. All **10 basic
+vowels** work, including the iotized (double-tick) ones which are stronger versions:
 
 | Draw | Vowel | Shape |
 |------|-------|-------|
 | `⊢` | **ㅏ** | 창 — a forward piercing **lance** |
+| `⊢⊢` | **ㅑ** | 쌍창 — a **stronger** lance |
 | `⊣` | **ㅓ** | 소용돌이 — a wide **swirl** (big AoE) |
+| `⊣⊣` | **ㅕ** | 대소용돌이 — a **huge** swirl |
 | `⊥` | **ㅗ** | 비 — bolts **rain** from the sky |
+| `⊥⊥` | **ㅛ** | 폭우 — a heavier **downpour** |
 | `⊤` | **ㅜ** | 운석 — a crashing **meteor** |
+| `⊤⊤` | **ㅠ** | 운석우 — a **meteor shower** |
 | `—` | **ㅡ** | 파동 — a **wave** sweeping the lane |
 | `│` | **ㅣ** | 관통 — a high-damage **pierce** |
 
-Add a **third consonant (받침)** — e.g. **각** (ㄱ + ㅏ + ㄱ) — to fuse both consonants into a
-**screen-wide ultimate** that carries both their effects.
+Add a **third consonant (받침)** — e.g. **건** (ㄱ + ㅓ + ㄴ) or **혈** (ㅎ + ㅕ + ㄹ) — to fuse both
+consonants into a **screen-wide ultimate** that carries both their effects.
+
+### Two ways to draw
+
+- **Quick draw** (default): draw a stroke and it commits after a short pause — fast for single
+  letters and quick combos.
+- **✍️ 모아 그리기 (Hold draw)**: tap the button to compose with **no time limit** — draw every
+  stroke of a long syllable (great for `건`, `혈`) at your own pace, then tap **✨ 시전** to fire.
 
 A few real Korean words are **hidden signature spells**: spell out **불** (ㅂㅜㄹ, "fire") for
 지옥불, **물** (ㅁㅜㄹ, "water") for 해일, **산** (ㅅㅏㄴ, "mountain") for 산사태 — each with a
