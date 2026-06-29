@@ -98,6 +98,21 @@ block assembling, with a `쌍 ㄲ!` / `조합 ㅘ!` flash when a merge happens.
   stroke of a long syllable (great for `건`, `혈`) at your own pace, then tap **✨ 시전** to fire.
 - **✕**: clears the syllable you're drawing if you make a mistake.
 
+## Progression — unlock letters
+
+You don't start with the whole alphabet. New runs begin with **5 letters** (ㅅ ㄱ ㄴ + ㅏ ㅣ) — enough
+to cast a few spells and form simple syllables — and you unlock the rest two ways (both persist
+across runs):
+
+- **Level up**: kills and cleared waves grant **XP**. Each level hands you the next letter on a
+  guided path plus bonus gold, so everyone steadily fills out the alphabet.
+- **소환 / Summon (gacha)**: spend **gold** in the Shop's Summon tab to roll a random *locked*
+  letter immediately — a faster, pricier route. A collection grid shows your **N/24** progress with
+  locked jamo dimmed.
+
+Drawing a letter you haven't unlocked shows a brief "locked" prompt instead of casting. The
+spellbook dims locked entries. (The tutorial is a sandbox — every letter works there.)
+
 ## Combo
 
 Chain kills before the timer runs out to build a **combo**, which raises a **score multiplier**
@@ -106,9 +121,9 @@ your best combo is recorded on the game-over screen.
 
 ## First-run tutorial
 
-New players get a short guided coach that walks through **가 → 까 → 과** — teaching a basic
-syllable, then a 쌍자음 (ㄱㄱ→ㄲ), then a 복합 모음 (ㅗ+ㅏ→ㅘ) — on calm practice targets. It
-advances as you draw each one, can be skipped, and only appears once.
+New players get a short guided coach that walks through **가 → 까 → 개** — teaching a basic
+syllable, then a 쌍자음 (ㄱㄱ→ㄲ), then a 복합 모음 (ㅏ+ㅣ→ㅐ) using only the starter letters — on
+calm practice targets. It advances as you draw each one, can be skipped, and only appears once.
 
 ## Quality-of-life
 

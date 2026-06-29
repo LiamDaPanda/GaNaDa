@@ -1,5 +1,5 @@
 // sw.js — minimal offline cache so the game is installable & playable offline.
-const CACHE = 'ganada-v11';
+const CACHE = 'ganada-v12';
 const ASSETS = [
   './',
   './index.html',
@@ -18,6 +18,7 @@ const ASSETS = [
   './src/themes.js',
   './src/i18n.js',
   './src/effects.js',
+  './src/progression.js',
 ];
 
 self.addEventListener('install', (e) => {

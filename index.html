@@ -37,6 +37,7 @@
     <symbol id="ic-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 3.5v2.4M12 18.1v2.4M3.5 12h2.4M18.1 12h2.4M6 6l1.7 1.7M16.3 16.3 18 18M18 6l-1.7 1.7M7.7 16.3 6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
     <symbol id="ic-palette" viewBox="0 0 24 24"><path d="M12 3.5a8.5 8.5 0 0 0 0 17c1.4 0 2-1 2-1.8 0-1.4-1.2-1.5-1.2-2.6 0-.8.7-1.4 1.6-1.4H16a4.5 4.5 0 0 0 4.5-4.7C20.3 6.4 16.6 3.5 12 3.5z" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="8" cy="11" r="1.1" fill="currentColor"/><circle cx="9.5" cy="7.5" r="1.1" fill="currentColor"/><circle cx="14" cy="7.5" r="1.1" fill="currentColor"/></symbol>
     <symbol id="ic-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M3.5 12h17M12 3.5c2.4 2.3 2.4 14.7 0 17M12 3.5c-2.4 2.3-2.4 14.7 0 17" fill="none" stroke="currentColor" stroke-width="1.4"/></symbol>
+    <symbol id="ic-lock" viewBox="0 0 24 24"><rect x="5" y="10.5" width="14" height="9.5" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5" fill="none" stroke="currentColor" stroke-width="1.7"/><circle cx="12" cy="15" r="1.3" fill="currentColor"/></symbol>
   </svg>
 
   <div id="app">
@@ -94,14 +95,19 @@
     <!-- Wave banner -->
     <div id="banner"></div>
 
-    <!-- Upgrade shop -->
+    <!-- Shop: upgrades + summon -->
     <aside id="shop">
       <div class="shop-head">
-        <h2 data-i18n="shop.title">대장간 · 강화</h2>
+        <h2 data-i18n="shop.title">상점</h2>
         <button id="shopClose" class="icon-btn"><svg class="ic"><use href="#ic-clear"/></svg></button>
       </div>
-      <p class="shop-hint" data-i18n="shop.hint">처치한 도깨비의 골드로 영구 강화 (저장됨)</p>
+      <div id="shopTabs">
+        <button class="shop-tab active" data-stab="upgrade" data-i18n="shop.tabUpgrade">강화</button>
+        <button class="shop-tab" data-stab="summon" data-i18n="shop.tabSummon">소환</button>
+      </div>
+      <p class="shop-hint" id="shopHint" data-i18n="shop.hint">처치한 도깨비의 골드로 영구 강화 (저장됨)</p>
       <div id="shopList"></div>
+      <div id="summonBody"></div>
     </aside>
 
     <!-- Spellbook -->

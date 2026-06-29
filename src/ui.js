@@ -7,6 +7,7 @@ import { UPGRADES, UPGRADE_ORDER } from './upgrades.js';
 import { t, getLang, setLang, localName } from './i18n.js';
 import { THEMES, THEME_ORDER, getThemeId, setTheme } from './themes.js';
 import { Audio } from './audio.js';
+import * as Prog from './progression.js';
 
 export class UI {
   constructor() {
@@ -39,6 +40,7 @@ export class UI {
     };
     this.bannerTimer = null;
     this.bookTab = 'cons';
+    this.shopTab = 'upgrade';
     this.buildSpellbook();
   }
 
@@ -57,6 +59,14 @@ export class UI {
     };
     document.getElementById('shopToggle').addEventListener('click', () => drawerToggle(this.el.shop, () => this.refreshShop()));
     document.getElementById('shopClose').addEventListener('click', closeDrawers);
+    document.querySelectorAll('.shop-tab').forEach((tab) => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.shop-tab').forEach((x) => x.classList.remove('active'));
+        tab.classList.add('active');
+        this.shopTab = tab.dataset.stab;
+        this.refreshShop();
+      });
+    });
     document.getElementById('bookToggle').addEventListener('click', () => drawerToggle(this.el.spellbook));
     document.getElementById('bookClose').addEventListener('click', closeDrawers);
     document.getElementById('settingsToggle').addEventListener('click', () => drawerToggle(this.el.settings, () => this.buildSettings()));
@@ -179,13 +189,13 @@ export class UI {
     if (this.bookTab === 'cons') {
       for (const key of ATTACK_ORDER) {
         const a = ATTACKS[key];
-        body.appendChild(rowEl(a.jamo, a.color, localName(a), localDesc(a), `${t('bar.ink')} ${a.manaCost}`, key));
+        body.appendChild(rowEl(a.jamo, a.color, localName(a), localDesc(a), `${t('bar.ink')} ${a.manaCost}`, key, !Prog.isUnlocked(key)));
       }
     } else if (this.bookTab === 'vow') {
       body.appendChild(noteEl(t('book.vowNote')));
       for (const key of VOWEL_ORDER) {
         const v = VOWELS[key];
-        body.appendChild(rowEl(v.jamo, 'var(--ink)', localName(v), localDesc(v), `+${t('bar.ink')} ${v.manaCost}`));
+        body.appendChild(rowEl(v.jamo, 'var(--ink)', localName(v), localDesc(v), `+${t('bar.ink')} ${v.manaCost}`, '', !Prog.compoundUnlocked(key)));
       }
     } else {
       body.appendChild(noteEl(t('book.comboNote')));
@@ -245,8 +255,15 @@ export class UI {
 
   refreshShop() {
     if (!this.game) return;
-    const g = this.game;
     const list = document.getElementById('shopList');
+    const summon = document.getElementById('summonBody');
+    const hint = document.getElementById('shopHint');
+    const isSummon = this.shopTab === 'summon';
+    list.style.display = isSummon ? 'none' : 'flex';
+    summon.style.display = isSummon ? 'block' : 'none';
+    hint.textContent = isSummon ? t('sum.hint') : t('shop.hint');
+    if (isSummon) { this.buildSummon(); return; }
+    const g = this.game;
     list.innerHTML = '';
     for (const key of UPGRADE_ORDER) {
       const cost = g.upgradeCost(key);
@@ -274,6 +291,47 @@ export class UI {
     });
   }
 
+  buildSummon() {
+    const body = document.getElementById('summonBody');
+    const g = this.game;
+    const lvl = Prog.getLevel();
+    const xp = Prog.getXp();
+    const need = Prog.xpToNext(lvl);
+    const xpPct = Math.min(100, (xp / need) * 100);
+    const got = Prog.unlockedCount();
+    const can = Prog.canPull();
+    const cost = Prog.gachaCost();
+    const afford = g.state.gold >= cost;
+
+    body.innerHTML =
+      `<div class="sum-level"><span>${t('sum.level')} <b>${lvl}</b></span><span>${xp}/${need} XP</span></div>` +
+      `<div class="sum-xp"><div class="sum-xp-fill" style="width:${xpPct}%"></div></div>` +
+      `<div class="sum-collect">${t('sum.collection')} <b>${got}/${Prog.TOTAL}</b></div>` +
+      (can
+        ? `<button id="pullBtn" class="big-btn sum-pull${afford ? '' : ' disabled'}">${t('sum.pull')} · <svg class="ic xs"><use href="#ic-coin"/></svg>${cost}</button>`
+        : `<div class="sum-done">${t('sum.allUnlocked')}</div>`) +
+      '<div id="sumGrid" class="sum-grid"></div>';
+
+    // collection grid (locked jamo dimmed)
+    const grid = body.querySelector('#sumGrid');
+    for (const id of Prog.ALL_UNLOCKABLE) {
+      const a = ATTACKS[id] || VOWELS[id];
+      const cell = document.createElement('div');
+      cell.className = 'sum-cell' + (Prog.isUnlocked(id) ? '' : ' locked');
+      cell.textContent = a ? a.jamo : '';
+      grid.appendChild(cell);
+    }
+
+    const btn = body.querySelector('#pullBtn');
+    if (btn) btn.addEventListener('click', () => {
+      const res = g.buyGacha();
+      if (res && res.id) this.flashUnlock(res.id);
+      this.buildSummon();
+    });
+  }
+
+  flashUnlock() { /* visual handled on canvas; rebuild refreshes the grid */ }
+
   showGameOver(s, best, bestCombo = 0) {
     this.el.goStats.innerHTML = t('go.stats', {
       wave: s.wave, score: s.score, kills: s.kills, combo: bestCombo, best: best || s.wave,
@@ -295,14 +353,14 @@ function noteEl(html) {
   return p;
 }
 
-function rowEl(jamo, color, name, desc, cost, key = '') {
+function rowEl(jamo, color, name, desc, cost, key = '', locked = false) {
   const row = document.createElement('div');
-  row.className = 'book-row';
+  row.className = 'book-row' + (locked ? ' locked' : '');
   if (key) row.dataset.key = key;
   row.innerHTML =
     `<div class="book-jamo" style="color:${color}">${jamo}</div>` +
     `<div class="book-main"><div class="book-name">${name}</div>` +
     `<div class="book-desc">${desc || ''}</div></div>` +
-    (cost ? `<div class="book-cost">${cost}</div>` : '');
+    (locked ? '<div class="book-cost lock"><svg class="ic"><use href="#ic-lock"/></svg></div>' : (cost ? `<div class="book-cost">${cost}</div>` : ''));
   return row;
 }

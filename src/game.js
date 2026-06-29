@@ -11,13 +11,14 @@ import { UPGRADES } from './upgrades.js';
 import { getTheme } from './themes.js';
 import { t } from './i18n.js';
 import { Ring, Flash, Bolt, Beam, Shards, Streak, Wisp, Smoke, Crack, Crystal, Gas, Rays } from './effects.js';
+import * as Prog from './progression.js';
 
 const SAVE_KEY = 'ganada_save_v1';
 
 const TUTORIAL_STEPS = [
   { key: 'tut.1', target: '가' },
   { key: 'tut.2', target: '까' },
-  { key: 'tut.3', target: '과' },
+  { key: 'tut.3', target: '개' },
 ];
 function tutStep(i) {
   const s = TUTORIAL_STEPS[i];
@@ -243,6 +244,7 @@ export class Game {
       this.bestWave = Math.max(this.bestWave || 1, this.state.wave);
       this.state.gold += 10 + this.state.wave * 2;
       this.texts.push(new FloatingText(this.W / 2, this.H * 0.4, t('toast.waveClear'), '#c9a44e', 26));
+      this.gainXp(25 + this.state.wave * 12);
       this.save();
       setTimeout(() => { if (!this.gameOver && !this.tutorial.active) this.startWave(); }, 1600);
     }
@@ -572,6 +574,27 @@ export class Game {
       this.buzz(12);
     }
     if (e.def.boss) this.shake = Math.min(28, this.shake + 16);
+    // meta XP toward leveling up + unlocking letters
+    this.gainXp(Math.round(e.maxHp * 0.5) + (e.def.boss ? 60 : 4));
+  }
+
+  gainXp(amount) {
+    const res = Prog.addXp(amount);
+    if (res.gold) this.state.gold += res.gold;
+    for (const lv of res.levels) {
+      this.texts.push(new FloatingText(this.W / 2, this.H * 0.36, t('toast.levelUp', { n: lv }), '#c79a3e', 26));
+      Audio.buy();
+    }
+    for (const id of res.unlocked) {
+      const j = jamoChar(id);
+      this.texts.push(new FloatingText(this.W / 2, this.H * 0.46, t('toast.newLetter', { j }), '#e6cf94', 22));
+      this.effects.push(new Ring(this.W / 2, this.H * 0.46, 6, 80, 0.7, '#e6cf94', 3));
+      this.buzz(20);
+    }
+    if ((res.levels.length || res.unlocked.length) && this.ui) {
+      this.ui.refreshShop();
+      this.ui.buildSpellbook();
+    }
   }
 
   // ---- particles -----------------------------------------------------------
@@ -640,22 +663,24 @@ export class Game {
     const j = this.compose.jamos;
     const rc = this.recognizer.recognize(stroke, 'consonant');
     const rv = this.recognizer.recognize(stroke, 'vowel');
+    const consOk = rc.id && rc.score >= ACCEPT;
+    const vowOk = rv.id && rv.score >= ACCEPT;
 
     if (j.length === 0) {
-      // 초성 — must be a consonant
-      if (rc.id && rc.score >= ACCEPT) return this.addJamo(rc.id, at);
+      if (consOk) return this.addUnlocked(rc.id, at);
       return false;
     }
 
     if (j.length === 1) {
       // after 초성: a vowel (중성), or the same consonant again → doubled 쌍자음
       const dbl = DOUBLE_OF[j[0]];
-      if (dbl && rc.id === j[0] && rc.score >= ACCEPT && rc.score >= rv.score) {
+      if (dbl && rc.id === j[0] && consOk && rc.score >= rv.score) {
         j[0] = dbl;
         return this.addJamo(null, at, t('toast.double', { j: jamoChar(dbl) }));
       }
-      if (rv.id && rv.score >= ACCEPT && rv.score >= rc.score) return this.addJamo(rv.id, at);
-      if (rc.id && rc.score >= ACCEPT) { // a different consonant → new syllable
+      if (vowOk && rv.score >= rc.score) return this.addUnlocked(rv.id, at);
+      if (consOk) { // a different consonant → start a new syllable
+        if (!this.usable(rc.id)) return this.lockedMsg(at, rc.id);
         this.commitSyllable();
         return this.addJamo(rc.id, at);
       }
@@ -665,31 +690,69 @@ export class Game {
     if (j.length === 2) {
       // after 초성+중성: a compound vowel, or a 종성 consonant
       const comb = rv.id && COMBINE_VOWEL[`${j[1]},${rv.id}`];
-      if (comb && rv.score >= ACCEPT && rv.score >= rc.score) {
+      if (comb && vowOk && rv.score >= rc.score) {
+        if (!this.usable(rv.id)) return this.lockedMsg(at, rv.id);
         j[1] = comb;
         return this.addJamo(null, at, t('toast.combine', { j: jamoChar(comb) }));
       }
-      if (rc.id && rc.score >= ACCEPT) return this.addJamo(rc.id, at); // 받침
+      if (consOk) return this.addUnlocked(rc.id, at); // 받침
       return false;
     }
 
-    // j.length === 3 (reachable in hold mode): extend the 받침 into a 겹받침
-    // (ㄹ+ㄱ→ㄺ) or a doubled final, otherwise commit and begin a new syllable.
+    // j.length === 3 (hold mode): extend the 받침 into a 겹받침 / doubled final,
+    // else commit and begin a new syllable.
     const dblJong = DOUBLE_OF[j[2]];
-    if (dblJong && rc.id === j[2] && rc.score >= ACCEPT && rc.score >= rv.score) {
+    if (dblJong && rc.id === j[2] && consOk && rc.score >= rv.score) {
       j[2] = dblJong;
       return this.addJamo(null, at, t('toast.final', { j: jamoChar(dblJong) }));
     }
     const cluster = rc.id && COMBINE_JONG[`${j[2]},${rc.id}`];
-    if (cluster && rc.score >= ACCEPT && rc.score >= rv.score) {
+    if (cluster && consOk && rc.score >= rv.score) {
+      if (!this.usable(rc.id)) return this.lockedMsg(at, rc.id);
       j[2] = cluster;
       return this.addJamo(null, at, t('toast.cluster', { j: jamoChar(cluster) }));
     }
-    if (rc.id && rc.score >= ACCEPT) {
+    if (consOk) {
+      if (!this.usable(rc.id)) return this.lockedMsg(at, rc.id);
       this.commitSyllable();
       return this.addJamo(rc.id, at);
     }
     return false;
+  }
+
+  // The tutorial is a sandbox — every letter is usable there.
+  usable(id) {
+    return this.tutorial.active || Prog.isUnlocked(id);
+  }
+
+  // Add a recognized jamo only if it's unlocked; otherwise show a lock prompt.
+  addUnlocked(id, at, toast = null) {
+    if (!this.usable(id)) return this.lockedMsg(at, id);
+    return this.addJamo(id, at, toast);
+  }
+
+  lockedMsg(at, id) {
+    Audio.miss();
+    this.buzz([8, 30, 8]);
+    this.texts.push(new FloatingText(at.x, at.y, `${jamoChar(id)} · ${t('toast.locked')}`, '#bf6a5a', 20));
+    return true; // consumed — no '?' miss marker
+  }
+
+  // Gacha: spend gold to summon a random locked letter. Returns the result.
+  buyGacha() {
+    if (!Prog.canPull()) return { dup: true };
+    const cost = Prog.gachaCost();
+    if (this.state.gold < cost) { Audio.miss(); return { poor: true, cost }; }
+    this.state.gold -= cost;
+    const res = Prog.gachaPull();
+    this.save();
+    Audio.buy();
+    if (res.id) {
+      this.texts.push(new FloatingText(this.W / 2, this.H * 0.4, `${jamoChar(res.id)}  ${t('sum.got')}`, '#e6cf94', 30));
+      this.effects.push(new Ring(this.W / 2, this.H * 0.4, 6, 90, 0.8, '#e6cf94', 3));
+      if (this.ui) this.ui.buildSpellbook();
+    }
+    return res;
   }
 
   composeWindow() {
