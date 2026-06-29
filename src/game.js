@@ -10,6 +10,7 @@ import { drawDokkaebi, drawGate, drawBackground, brushStroke, inkBlob } from './
 import { UPGRADES } from './upgrades.js';
 import { getTheme } from './themes.js';
 import { t } from './i18n.js';
+import { Ring, Flash, Bolt, Beam, Shards, Streak, Wisp } from './effects.js';
 
 const SAVE_KEY = 'ganada_save_v1';
 
@@ -33,8 +34,11 @@ export class Game {
     this.enemies = [];
     this.projectiles = [];
     this.particles = [];
+    this.effects = [];
     this.texts = [];
     this.shake = 0;
+    this.screenFlash = { a: 0, color: '#ffffff' };
+    this.wispTimer = 0;
 
     this.stroke = [];        // current drawing points (screen space)
     this.drawing = false;
@@ -107,6 +111,10 @@ export class Game {
 
   buzz(ms) {
     if (this.haptic) navigator.vibrate?.(ms);
+  }
+
+  flashScreen(color, a) {
+    if (a > this.screenFlash.a) { this.screenFlash.a = a; this.screenFlash.color = color; }
   }
 
   enemiesRemaining() {
@@ -327,12 +335,9 @@ export class Game {
         this.spawnBurst(e.x, e.y, atk.color, 10);
       }
     }
-    // streak visual sweeping right along the band
-    for (let i = 0; i < 50; i++) {
-      const t = i / 50;
-      this.particles.push(new Particle(this.gateX + t * (this.W - this.gateX), bandY + (Math.random() * 30 - 15),
-        i % 2 ? atk.glow : atk.color, { speed: 30, life: 0.35, size: 3.5, gravity: 0 }));
-    }
+    // a bright lance streak sweeping right along the band
+    this.effects.push(new Streak(this.gateX, bandY, this.W, bandY - 6, 14, atk.color));
+    this.effects.push(new Streak(this.gateX, bandY, this.W, bandY - 6, 5, atk.glow));
   }
 
   // ㅗ — rain: bolts fall from the sky onto several enemies.
@@ -360,6 +365,10 @@ export class Game {
       this.explode(hx, hy, atk, dmg);
       this.shake = Math.min(28, this.shake + 18);
       this.spawnBurst(hx, hy, atk.color, 60);
+      const R = Math.max(70, atk.radius);
+      this.effects.push(new Ring(hx, hy, 10, R * 1.6, 0.7, atk.color, 7));
+      this.effects.push(new Shards(hx, hy, 12, R * 0.9, atk.glow));
+      this.flashScreen(atk.glow, 0.16);
     });
     this.projectiles.push(meteor);
   }
@@ -375,10 +384,9 @@ export class Game {
       if (atk.knockback) e.kx = atk.knockback;
       this.spawnBurst(e.x, e.y, atk.color, 12);
     }
-    for (let i = 0; i < 70; i++) {
-      this.particles.push(new Particle(this.gateX + Math.random() * (this.W - this.gateX),
-        this.laneY - 20 + (Math.random() * 70 - 35), atk.glow, { speed: 20, life: 0.45, size: 3, gravity: 0 }));
-    }
+    const by = this.laneY - 20;
+    this.effects.push(new Beam(this.gateX, this.W, by, 26, atk.color, 0.45));
+    this.effects.push(new Beam(this.gateX, this.W, by, 9, atk.glow, 0.45));
   }
 
   // 받침 fusion — a screen-wide ultimate carrying both consonants' effects.
@@ -392,11 +400,18 @@ export class Game {
       if (atk.knockback) e.kx = atk.knockback * 1.5;
       this.spawnBurst(e.x, e.y, atk.color, 22);
     }
-    for (let i = 0; i < 130; i++) {
+    for (let i = 0; i < 90; i++) {
       this.particles.push(new Particle(this.gateX + Math.random() * (this.W - this.gateX),
         this.laneY - 20 + (Math.random() * 120 - 60), i % 2 ? atk.glow : atk.color,
-        { speed: 60, life: 0.6, size: 4, gravity: 0 }));
+        { speed: 70, life: 0.6, size: 4, gravity: 0 }));
     }
+    // overlapping shockwaves from the gate + a strong screen flash
+    const cy = this.laneY - 20;
+    for (let i = 0; i < 3; i++) {
+      this.effects.push(new Ring(this.gateX, cy, 10, this.W * (0.7 + i * 0.25), 0.7 + i * 0.15, i % 2 ? atk.glow : atk.color, 6 - i));
+    }
+    this.effects.push(new Flash(this.gateX, cy, 120, 0.5, atk.glow));
+    this.flashScreen(atk.color, 0.3);
   }
 
   frontmost() {
@@ -411,6 +426,20 @@ export class Game {
   explode(x, y, atk, dmg) {
     this.shake = Math.min(18, this.shake + (atk.kind === 'nova' ? 12 : 7));
     this.spawnBurst(x, y, atk.color, atk.kind === 'nova' ? 60 : 30);
+    // animated impact: flash core + expanding shockwave ring
+    const R = Math.max(40, atk.radius || 70);
+    this.effects.push(new Flash(x, y, R * 0.7, 0.3, atk.glow));
+    this.effects.push(new Ring(x, y, 8, R * (atk.kind === 'nova' ? 1.4 : 1.1), atk.kind === 'nova' ? 0.6 : 0.45, atk.color, 6));
+    if (atk.kind === 'nova') {
+      this.effects.push(new Ring(x, y, 8, R * 1.7, 0.8, atk.glow, 3));
+      this.flashScreen(atk.glow, 0.18);
+    }
+    if (atk.freeze) this.effects.push(new Shards(x, y, 9, R * 0.8, atk.glow));
+    if (atk.element === 'lightning') {
+      for (let i = 0; i < 3; i++) {
+        this.effects.push(new Bolt(x, y - R, x + (Math.random() * 2 - 1) * R * 0.6, y, atk.color));
+      }
+    }
     const radius = atk.radius;
     for (const e of this.enemies) {
       if (e.dead) continue;
@@ -438,7 +467,8 @@ export class Game {
       }
       if (!target) break;
       hit.add(target.id);
-      this.spawnBolt(from, target, atk.color);
+      this.effects.push(new Bolt(from.x, from.y, target.x, target.y, atk.color));
+      this.effects.push(new Flash(target.x, target.y, 26, 0.25, atk.glow));
       this.damageEnemy(target, dmg * (1 - i * 0.12), atk);
       from = { x: target.x, y: target.y };
     }
@@ -447,19 +477,18 @@ export class Game {
 
   dragonBeam(atk, dmg) {
     this.shake = Math.min(26, this.shake + 20);
+    const by = this.laneY - 26;
     for (const e of this.enemies) {
       if (e.dead) continue;
       this.damageEnemy(e, dmg, atk);
       if (atk.burn) e.applyBurn(atk.burn.dps, atk.burn.duration);
       this.spawnBurst(e.x, e.y, atk.color, 14);
     }
-    // beam visual particles across the lane
-    for (let i = 0; i < 80; i++) {
-      const px = this.gateX + Math.random() * (this.W - this.gateX);
-      this.particles.push(new Particle(px, this.laneY - 30 + (Math.random() * 60 - 30), atk.glow, {
-        speed: 20, life: 0.5, size: 3, gravity: 0,
-      }));
-    }
+    // a charging, sweeping beam across the whole lane
+    this.effects.push(new Beam(this.gateX, this.W, by, 34, atk.color, 0.55));
+    this.effects.push(new Beam(this.gateX, this.W, by, 14, atk.glow, 0.55));
+    this.effects.push(new Flash(this.gateX, by, 60, 0.4, atk.glow));
+    this.flashScreen(atk.color, 0.22);
   }
 
   damageEnemy(e, dmg, atk) {
@@ -686,6 +715,7 @@ export class Game {
     this.ui.hideTutorial();
     this.enemies = [];
     this.projectiles = [];
+    this.effects = [];
     this.holdMode = false;
     this.combo = 0;
     this.comboTimer = 0;
@@ -723,7 +753,9 @@ export class Game {
     this.enemies = [];
     this.projectiles = [];
     this.particles = [];
+    this.effects = [];
     this.texts = [];
+    this.screenFlash.a = 0;
     this.gameOver = false;
     this.state = this.freshState();
     this.state.gold = keepGold;
@@ -809,15 +841,29 @@ export class Game {
 
     for (const p of this.projectiles) p.update(dt);
     for (const p of this.particles) p.update(dt);
+    for (const fx of this.effects) fx.update(dt);
     for (const t of this.texts) t.update(dt);
+
+    // ambient 도깨비불 wisps drifting up from the enemies (eldritch vibe)
+    this.wispTimer -= dt;
+    if (this.wispTimer <= 0 && this.enemies.length) {
+      this.wispTimer = 0.25;
+      const e = this.enemies[Math.floor(Math.random() * this.enemies.length)];
+      if (e && !e.dead) {
+        const col = e.def.boss ? '#7fd0ff' : (e.type === 'red' ? '#ff8a5a' : '#8fd0ff');
+        this.effects.push(new Wisp(e.x + (Math.random() * 20 - 10), e.y - e.radius * 0.5, col));
+      }
+    }
 
     this.enemies = this.enemies.filter((e) => !e.dead);
     this.projectiles = this.projectiles.filter((p) => !p.dead);
     this.particles = this.particles.filter((p) => !p.dead);
+    this.effects = this.effects.filter((fx) => !fx.dead);
     this.texts = this.texts.filter((t) => !t.dead);
 
     if (this.shake > 0) this.shake = Math.max(0, this.shake - dt * 40);
     if (this.lowInkFlash > 0) this.lowInkFlash -= dt;
+    if (this.screenFlash.a > 0) this.screenFlash.a = Math.max(0, this.screenFlash.a - dt * 0.9);
     if (this.comboTimer > 0) {
       this.comboTimer -= dt;
       if (this.comboTimer <= 0) this.combo = 0;
@@ -850,6 +896,9 @@ export class Game {
 
     // projectiles
     for (const p of this.projectiles) this.drawProjectile(ctx, p);
+
+    // animated spell effects (shockwaves, bolts, beams, shards, wisps)
+    for (const fx of this.effects) fx.draw(ctx);
 
     // particles — themed colour; additive bloom only in glow-heavy themes
     const theme = getTheme();
@@ -889,6 +938,16 @@ export class Game {
     if (this.combo >= 3) this.drawCombo(ctx);
 
     ctx.restore();
+
+    // full-screen impact flash (above the shake transform)
+    if (this.screenFlash.a > 0.01) {
+      ctx.save();
+      ctx.globalCompositeOperation = 'lighter';
+      ctx.globalAlpha = this.screenFlash.a;
+      ctx.fillStyle = getTheme().fx(this.screenFlash.color);
+      ctx.fillRect(0, 0, this.W, this.H);
+      ctx.restore();
+    }
   }
 
   drawCombo(ctx) {

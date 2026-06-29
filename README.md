@@ -203,8 +203,13 @@ geometry, no image assets, and no emoji in the game UI:
   mountain ridges with wavy crests, calligraphic bamboo/reeds, drifting ink mist, and a paper vignette.
 - A **Korean hanok gate** drawn with a single sweeping calligraphic roof stroke, curved brush
   pillars, a wavy plank panel, and a glowing **taegeuk (태극)** ward whose colour tracks gate health.
-- **Dokkaebi** with organic ink-blob bodies, tapered brush horns, fur-flick loincloths, glowing
-  ink eyes, and brush clubs (the boss gets a crown + aura).
+- **Dokkaebi** drawn as menacing dark-fantasy goblins (Omniscient-Reader style): a wild flaming
+  mane with glowing 도깨비불 wisp tips, curved ridged horns, angry glowing slit eyes (cat pupils),
+  a wide jagged fanged grin, rim lighting, pointed ears, and a spiked club. The boss adds a golden
+  aura ring, flame-gold mane, and a crown. Ambient ghost-flame wisps drift up from every enemy.
+- **Animated spell effects** (`effects.js`): expanding shockwave rings, radial impact flashes,
+  flickering jagged lightning arcs, sweeping beams (dragon's breath), frost/impact shards, lance
+  streaks, and a full-screen impact flash on ultimates — all tinted and glow-scaled by the theme.
 - The player's drawn letters render as a real **calligraphic brush** — dark sumi core, bright
   centre, soft bleed, and a wet brush head.
 - A hand-drawn **SVG icon set** (`#ic-*` symbols, tinted via `currentColor`) with a `feTurbulence`

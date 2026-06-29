@@ -434,104 +434,197 @@ export function drawDokkaebi(ctx, e, time = 0) {
   const frozen = e.slowT > 0;
   const seed = e.id * 131 + 7;
   const swing = Math.sin(e.bob * 1.2) * 0.4;
+  const boss = e.def.boss;
+  const maneTint = e.type === 'red' ? '#ff7a3a' : e.type === 'green' ? '#8fe06a'
+    : boss ? '#ffd24a' : '#7fd0ff';
 
+  // ground shadow
   ctx.save();
   ctx.translate(x, e.y + r * 0.98); ctx.scale(1, 0.28);
-  inkBlob(ctx, 0, 0, r * 0.8, seed + 3, 0.3, 9);
-  ctx.fillStyle = 'rgba(0,0,0,0.32)'; ctx.fill();
+  inkBlob(ctx, 0, 0, r * 0.82, seed + 3, 0.3, 9);
+  ctx.fillStyle = 'rgba(0,0,0,0.34)'; ctx.fill();
   ctx.restore();
 
   let body = e.def.color;
   if (frozen) body = '#6fb6d6';
   body = T.fx(body);
 
+  // --- wild flame mane (behind the head) ---
+  const mr = rng(seed + 71);
+  for (let i = 0; i < 11; i++) {
+    const a = -Math.PI * 1.02 + (i / 10) * Math.PI * 1.04;
+    const bx = x + Math.cos(a) * r * 0.86;
+    const by = y + Math.sin(a) * r * 0.86;
+    const len = r * (0.5 + mr() * 0.55) * (boss ? 1.3 : 1);
+    const curl = (mr() - 0.5) * r * 0.5;
+    const tipX = bx + Math.cos(a) * len + curl;
+    const tipY = by + Math.sin(a) * len - len * 0.25;
+    const midX = (bx + tipX) / 2 + curl * 0.4;
+    const midY = (by + tipY) / 2 - len * 0.18;
+    brushStroke(ctx, [{ x: bx, y: by }, { x: midX, y: midY }, { x: tipX, y: tipY }], r * 0.17, shift(body, -34), true);
+    // glowing wisp tip
+    ctx.save();
+    ctx.globalAlpha = 0.5;
+    ctx.fillStyle = T.fx(maneTint);
+    if (G > 0.7) { ctx.shadowColor = ctx.fillStyle; ctx.shadowBlur = 6 * G; }
+    inkBlob(ctx, tipX, tipY, r * 0.07, seed + i * 13, 0.4, 6); ctx.fill();
+    ctx.restore();
+  }
+
+  // pointed ears
+  for (const s of [-1, 1]) {
+    brushStroke(ctx, [
+      { x: x + s * r * 0.82, y: y - r * 0.05 },
+      { x: x + s * r * 1.18, y: y - r * 0.28 },
+      { x: x + s * r * 0.78, y: y - r * 0.35 },
+    ], r * 0.18, shift(body, -10), true);
+  }
+
+  // spiked club
   ctx.save();
-  ctx.translate(x - r * 0.62, y + r * 0.2); ctx.rotate(-0.5 + swing);
-  brushStroke(ctx, [{ x: 0, y: 0 }, { x: -1, y: -r * 0.5 }, { x: 0, y: -r * 0.9 }], r * 0.18, '#5b3f28', false);
-  ctx.fillStyle = '#6e4d31';
-  inkBlob(ctx, 0, -r * 0.98, r * 0.28, seed + 11, 0.22, 9); ctx.fill();
+  ctx.translate(x - r * 0.7, y + r * 0.3); ctx.rotate(-0.5 + swing);
+  brushStroke(ctx, [{ x: 0, y: 0 }, { x: -1, y: -r * 0.5 }, { x: 0, y: -r * 0.95 }], r * 0.17, '#4e3520', false);
+  ctx.fillStyle = '#5e3f26';
+  inkBlob(ctx, 0, -r * 1.02, r * 0.27, seed + 11, 0.22, 9); ctx.fill();
+  ctx.fillStyle = '#caa86a';
+  for (let i = 0; i < 5; i++) {
+    const a = (i / 5) * Math.PI * 2;
+    ctx.beginPath();
+    ctx.arc(Math.cos(a) * r * 0.27, -r * 1.02 + Math.sin(a) * r * 0.27, r * 0.045, 0, Math.PI * 2); ctx.fill();
+  }
   ctx.restore();
 
-  inkBlob(ctx, x, y, r, seed, 0.14, 13);
+  // --- head (slightly angular ink silhouette) ---
+  ctx.save();
+  ctx.translate(x, y); ctx.scale(1, 1.06); ctx.translate(-x, -y);
+  inkBlob(ctx, x, y, r, seed, 0.12, 12);
+  ctx.restore();
   if (flash) ctx.fillStyle = '#fff';
   else {
-    const bg = ctx.createRadialGradient(x - r * 0.3, y - r * 0.35, r * 0.2, x, y, r * 1.05);
-    bg.addColorStop(0, shift(body, 30));
-    bg.addColorStop(0.7, body);
-    bg.addColorStop(1, shift(body, -28));
+    const bg = ctx.createRadialGradient(x - r * 0.32, y - r * 0.38, r * 0.2, x, y, r * 1.1);
+    bg.addColorStop(0, shift(body, 34));
+    bg.addColorStop(0.65, body);
+    bg.addColorStop(1, shift(body, -34));
     ctx.fillStyle = bg;
   }
-  if (G > 1) { ctx.shadowColor = body; ctx.shadowBlur = 8; }
+  if (G > 1) { ctx.shadowColor = body; ctx.shadowBlur = 10; }
   ctx.fill();
   ctx.shadowBlur = 0;
   ctx.lineWidth = Math.max(1.5, r * 0.07);
-  ctx.strokeStyle = G > 1 ? withAlpha(T.ui.ink, 0.7) : 'rgba(15,10,20,0.55)';
+  ctx.strokeStyle = G > 1 ? withAlpha(T.ui.ink, 0.8) : 'rgba(12,8,16,0.6)';
   ctx.stroke();
 
-  ctx.fillStyle = '#5b3f28';
-  for (let i = -3; i <= 3; i++) {
-    brushStroke(ctx, [
-      { x: x + i * r * 0.18, y: y + r * 0.5 },
-      { x: x + i * r * 0.18 + 1, y: y + r * 0.78 },
-      { x: x + i * r * 0.18, y: y + r * 0.98 },
-    ], r * 0.16, '#5b3f28', true);
-  }
-
-  ctx.save(); ctx.globalAlpha = 0.12; ctx.fillStyle = '#fff';
-  inkBlob(ctx, x, y + r * 0.22, r * 0.46, seed + 5, 0.3, 9); ctx.fill();
+  // rim light (upper-left crescent)
+  ctx.save();
+  ctx.globalAlpha = G > 1 ? 0.6 : 0.32;
+  ctx.strokeStyle = G > 1 ? T.fx(maneTint) : 'rgba(255,250,235,0.9)';
+  ctx.lineWidth = r * 0.12;
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.arc(x, y, r * 0.92, Math.PI * 0.86, Math.PI * 1.42);
+  ctx.stroke();
   ctx.restore();
 
+  // --- curved menacing horns ---
   for (const s of [-1, 1]) {
     brushStroke(ctx, [
-      { x: x + s * r * 0.42, y: y - r * 0.68 },
-      { x: x + s * r * 0.78, y: y - r * 1.08 },
-      { x: x + s * r * 0.6, y: y - r * 1.42 },
-    ], r * 0.26, e.def.horn, true);
+      { x: x + s * r * 0.4, y: y - r * 0.6 },
+      { x: x + s * r * 0.82, y: y - r * 1.0 },
+      { x: x + s * r * 1.04, y: y - r * 1.5 },
+      { x: x + s * r * 0.86, y: y - r * 1.66 },
+    ], r * 0.3, e.def.horn, true);
+    // horn ridge line
+    ctx.save(); ctx.globalAlpha = 0.4;
+    brushStroke(ctx, [
+      { x: x + s * r * 0.5, y: y - r * 0.7 },
+      { x: x + s * r * 0.82, y: y - r * 1.05 },
+      { x: x + s * r * 0.92, y: y - r * 1.4 },
+    ], r * 0.07, 'rgba(60,40,20,0.8)', true);
+    ctx.restore();
   }
-  if (e.def.boss) {
+
+  // --- boss: cracked jade mask + golden crown + aura ---
+  if (boss) {
     ctx.save();
-    ctx.shadowColor = 'rgba(160,120,50,0.5)'; ctx.shadowBlur = 5 * G + 2;
+    ctx.strokeStyle = withAlpha(T.fx('#ffcaa0'), 0.5);
+    ctx.lineWidth = 2; ctx.shadowColor = T.fx('#ff7a3a'); ctx.shadowBlur = 14;
+    ctx.beginPath(); ctx.arc(x, y, r * 1.22, 0, Math.PI * 2); ctx.stroke();
+    ctx.restore();
+    // golden crown spikes
+    ctx.save();
+    ctx.shadowColor = 'rgba(180,120,40,0.6)'; ctx.shadowBlur = 6 * G + 3;
     for (let i = -2; i <= 2; i++) {
-      brushStroke(ctx, [{ x: x + i * r * 0.3, y: y - r * 0.82 }, { x: x + i * r * 0.3 + 4, y: y - r * 1.12 }], r * 0.14, T.ui.gold, true);
+      brushStroke(ctx, [{ x: x + i * r * 0.3, y: y - r * 0.78 }, { x: x + i * r * 0.3 + 3, y: y - r * 1.16 }], r * 0.13, T.ui.gold, true);
     }
     ctx.restore();
   }
 
+  // --- heavy furrowed brow ---
   for (const s of [-1, 1]) {
-    brushStroke(ctx, [{ x: x + s * r * 0.52, y: y - r * 0.34 }, { x: x + s * r * 0.14, y: y - r * 0.15 }], r * 0.1, '#140c10', true);
+    brushStroke(ctx, [
+      { x: x + s * r * 0.58, y: y - r * 0.3 },
+      { x: x + s * r * 0.12, y: y - r * 0.08 },
+    ], r * 0.16, '#120a10', true);
   }
 
+  // --- glowing slit eyes (angry slant, cat-pupil) ---
+  const eyeGlow = G > 1 ? '#ff5d6c' : (boss ? '#ff8a3a' : '#ffd23a');
   for (const s of [-1, 1]) {
+    const ex = x + s * r * 0.34, ey = y - r * 0.02;
     ctx.save();
-    ctx.shadowColor = flash ? 'transparent' : (G > 1 ? '#ffe14d' : 'rgba(180,140,70,0.6)');
-    ctx.shadowBlur = flash ? 0 : (G > 1 ? 8 : 3);
-    ctx.fillStyle = flash ? '#000' : (G > 1 ? '#ffe14d' : '#cfa455');
-    inkBlob(ctx, x + s * r * 0.32, y - r * 0.04, r * 0.18, seed + (s > 0 ? 21 : 33), 0.3, 9);
-    ctx.fill();
+    ctx.translate(ex, ey); ctx.rotate(s * 0.45);
+    ctx.shadowColor = flash ? 'transparent' : eyeGlow;
+    ctx.shadowBlur = flash ? 0 : (G > 1 ? 12 : 6);
+    ctx.fillStyle = flash ? '#200' : eyeGlow;
+    ctx.beginPath(); ctx.ellipse(0, 0, r * 0.23, r * 0.12, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = '#160606'; // vertical slit pupil
+    ctx.beginPath(); ctx.ellipse(0, 0, r * 0.05, r * 0.1, 0, 0, Math.PI * 2); ctx.fill();
     ctx.restore();
-    ctx.fillStyle = '#181009';
-    inkBlob(ctx, x + s * r * 0.34, y - r * 0.01, r * 0.07, seed + 41, 0.3, 7); ctx.fill();
   }
 
-  brushStroke(ctx, [
-    { x: x - r * 0.26, y: y + r * 0.38 }, { x: x, y: y + r * 0.5 }, { x: x + r * 0.26, y: y + r * 0.38 },
-  ], r * 0.14, '#2a0d0d', true);
-  ctx.fillStyle = '#f3ecd9';
-  for (const s of [-1, 1]) {
-    brushStroke(ctx, [{ x: x + s * r * 0.12, y: y + r * 0.4 }, { x: x + s * r * 0.08, y: y + r * 0.56 }], r * 0.07, '#f3ecd9', true);
+  // --- wide jagged fanged grin ---
+  const my = y + r * 0.4;
+  const mw = r * 0.86;
+  ctx.fillStyle = '#23070a';
+  ctx.beginPath();
+  ctx.moveTo(x - mw / 2, my - r * 0.05);
+  ctx.quadraticCurveTo(x, my - r * 0.16, x + mw / 2, my - r * 0.05);
+  ctx.quadraticCurveTo(x, my + r * 0.2, x - mw / 2, my - r * 0.05);
+  ctx.closePath(); ctx.fill();
+  // teeth (interlocking fangs)
+  ctx.fillStyle = '#f1e7d2';
+  const tn = boss ? 7 : 5;
+  for (let i = 0; i < tn; i++) {
+    const tx = x - mw / 2 + mw * (i + 0.5) / tn;
+    ctx.beginPath(); // upper fang pointing down
+    ctx.moveTo(tx - mw * 0.06, my - r * 0.08);
+    ctx.lineTo(tx + mw * 0.06, my - r * 0.08);
+    ctx.lineTo(tx, my + r * 0.04);
+    ctx.closePath(); ctx.fill();
+  }
+  for (let i = 0; i < tn - 1; i++) {
+    const tx = x - mw / 2 + mw * (i + 1) / tn;
+    ctx.beginPath(); // lower fang pointing up
+    ctx.moveTo(tx - mw * 0.05, my + r * 0.1);
+    ctx.lineTo(tx + mw * 0.05, my + r * 0.1);
+    ctx.lineTo(tx, my + r * 0.01);
+    ctx.closePath(); ctx.fill();
   }
 
+  // frost shell
   if (frozen) {
-    ctx.save(); ctx.globalAlpha = 0.5; ctx.strokeStyle = 'rgba(220,250,255,0.9)'; ctx.lineWidth = 2;
-    inkBlob(ctx, x, y, r * 1.08, seed + 2, 0.16, 13); ctx.stroke();
+    ctx.save(); ctx.globalAlpha = 0.55; ctx.strokeStyle = 'rgba(220,250,255,0.9)'; ctx.lineWidth = 2;
+    inkBlob(ctx, x, y, r * 1.1, seed + 2, 0.16, 13); ctx.stroke();
     ctx.restore();
   }
 
-  const bw = r * 1.9, bx = x - bw / 2, by = y - r - (e.def.boss ? 24 : 15);
+  // hp bar
+  const bw = r * 1.9, bx = x - bw / 2, by = y - r - (boss ? 46 : 20);
   roundedBar(ctx, bx - 1.5, by - 1.5, bw + 3, 6, 'rgba(0,0,0,0.6)');
   const frac = Math.max(0, e.hp / e.maxHp);
   roundedBar(ctx, bx, by, bw * frac, 4, `hsl(${frac * 120}, 42%, 46%)`);
-  if (e.def.boss) {
+  if (boss) {
     ctx.fillStyle = T.ui.gold;
     ctx.font = 'bold 12px "Apple SD Gothic Neo", system-ui, sans-serif';
     ctx.textAlign = 'center';
