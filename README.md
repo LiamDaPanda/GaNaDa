@@ -210,6 +210,13 @@ geometry, no image assets, and no emoji in the game UI:
 - **Animated spell effects** (`effects.js`): expanding shockwave rings, radial impact flashes,
   flickering jagged lightning arcs, sweeping beams (dragon's breath), frost/impact shards, lance
   streaks, and a full-screen impact flash on ultimates — all tinted and glow-scaled by the theme.
+- **Per-element explosion flavours**: fire bursts rising embers + dark smoke; ice blooms a crystal
+  star; earth radiates ground cracks + flying rubble; water splashes droplets + a ripple ring;
+  poison leaves a rising gas cloud; holy/sun/light fans out radiant rays; shadow implodes.
+- **Cast wind-up**: the gate's taegeuk ward gathers a bright energy halo and pulses a ring out each
+  time you cast.
+- **Dokkaebi lunge**: enemies surge forward, lean, and swell to bite the gate (landing the hit
+  mid-lunge with its own shock ring) before vanishing.
 - The player's drawn letters render as a real **calligraphic brush** — dark sumi core, bright
   centre, soft bleed, and a wet brush head.
 - A hand-drawn **SVG icon set** (`#ic-*` symbols, tinted via `currentColor`) with a `feTurbulence`

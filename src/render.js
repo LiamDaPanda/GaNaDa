@@ -337,7 +337,7 @@ function withAlpha(hex, a) {
   return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`;
 }
 
-export function drawGate(ctx, gateX, laneY, H, hpFrac, time = 0) {
+export function drawGate(ctx, gateX, laneY, H, hpFrac, time = 0, charge = 0) {
   const T = getTheme();
   const G = T.glow;
   ctx.save();
@@ -394,10 +394,23 @@ export function drawGate(ctx, gateX, laneY, H, hpFrac, time = 0) {
   const g = Math.max(0, Math.min(1, hpFrac));
   const wx = gateX, wy = baseY - h / 2 + 4, wr = 22;
   const pulse = 1 + Math.sin(time * 3) * 0.05;
+  // cast-charge: a bright energy halo gathering at the ward
+  if (charge > 0.02) {
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    const cr = wr * (1.4 + charge * 1.3);
+    const hg = ctx.createRadialGradient(wx, wy, wr * 0.4, wx, wy, cr);
+    hg.addColorStop(0, withAlpha('#fff7e0', 0.5 * charge));
+    hg.addColorStop(0.5, withAlpha(T.fx(T.ui.gold), 0.4 * charge));
+    hg.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = hg;
+    ctx.beginPath(); ctx.arc(wx, wy, cr, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+  }
   ctx.save();
-  ctx.translate(wx, wy); ctx.scale(pulse, pulse);
+  ctx.translate(wx, wy); ctx.scale(pulse * (1 + charge * 0.12), pulse * (1 + charge * 0.12));
   ctx.shadowColor = `hsl(${g * 120}, ${40 + G * 30}%, ${42 + G * 10}%)`;
-  ctx.shadowBlur = 13 * G + 4;
+  ctx.shadowBlur = 13 * G + 4 + charge * 22;
   inkBlob(ctx, 0, 0, wr, 21, 0.06, 16);
   ctx.fillStyle = T.style === 'neon' ? 'rgba(20,16,30,0.9)' : 'rgba(238,230,210,0.95)';
   ctx.fill();
@@ -437,6 +450,16 @@ export function drawDokkaebi(ctx, e, time = 0) {
   const boss = e.def.boss;
   const maneTint = e.type === 'red' ? '#ff7a3a' : e.type === 'green' ? '#8fe06a'
     : boss ? '#ffd24a' : '#7fd0ff';
+
+  // gate lunge: surge toward the gate (left), lean and swell at the peak
+  if (e.attacking) {
+    const lp = Math.sin(Math.min(1, e.attackT / 0.34) * Math.PI);
+    ctx.translate(x, y);
+    ctx.translate(-lp * r * 0.8, lp * r * 0.08);
+    ctx.rotate(-lp * 0.22);
+    ctx.scale(1 + lp * 0.1, 1 + lp * 0.1);
+    ctx.translate(-x, -y);
+  }
 
   // ground shadow
   ctx.save();

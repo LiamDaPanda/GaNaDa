@@ -177,6 +177,127 @@ export class Wisp extends Effect {
   }
 }
 
+// Dark rising smoke puffs (fire).
+export class Smoke extends Effect {
+  constructor(x, y, r) {
+    super(0.7); this.x = x; this.y = y; this.r = r;
+    this.puffs = [];
+    for (let i = 0; i < 4; i++) this.puffs.push({ dx: (Math.random() - 0.5) * r * 0.8, dy: -Math.random() * r * 0.3, r: r * (0.35 + Math.random() * 0.4) });
+  }
+  draw(ctx) {
+    const k = this.k;
+    ctx.save();
+    ctx.globalAlpha = (1 - k) * 0.38;
+    ctx.fillStyle = '#3a3340';
+    for (const p of this.puffs) {
+      ctx.beginPath();
+      ctx.arc(this.x + p.dx, this.y + p.dy - k * this.r * 0.6, p.r * (0.6 + k), 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+}
+
+// Radiating ground cracks (earth).
+export class Crack extends Effect {
+  constructor(x, y, len, color) {
+    super(0.7); this.x = x; this.y = y; this.color = color;
+    this.lines = [];
+    const n = 5;
+    for (let i = 0; i < n; i++) {
+      const a = (i / n) * Math.PI * 2 + Math.random() * 0.4;
+      const segs = []; let px = 0, py = 0;
+      for (let j = 0; j < 3; j++) {
+        px += Math.cos(a) * len / 3 + (Math.random() - 0.5) * len * 0.2;
+        py += Math.sin(a) * len / 3 * 0.35 + (Math.random() - 0.5) * len * 0.08;
+        segs.push({ x: px, y: py });
+      }
+      this.lines.push(segs);
+    }
+  }
+  draw(ctx) {
+    const T = getTheme(); const k = this.k;
+    ctx.save();
+    ctx.globalAlpha = (1 - k);
+    ctx.strokeStyle = T.fx(this.color); ctx.lineWidth = 2.5 * (1 - k); ctx.lineCap = 'round';
+    const grow = easeOut(Math.min(1, k * 2));
+    for (const segs of this.lines) {
+      ctx.beginPath(); ctx.moveTo(this.x, this.y);
+      for (const s of segs) ctx.lineTo(this.x + s.x * grow, this.y + s.y * grow);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+}
+
+// Blooming ice crystals (frost).
+export class Crystal extends Effect {
+  constructor(x, y, r, color) {
+    super(0.6); this.x = x; this.y = y; this.r = r; this.color = color;
+    this.spikes = [];
+    for (let i = 0; i < 6; i++) this.spikes.push({ a: (i / 6) * Math.PI * 2 + Math.random() * 0.3, len: r * (0.5 + Math.random() * 0.6) });
+  }
+  draw(ctx) {
+    const T = getTheme(); const k = this.k; const col = T.fx(this.color);
+    ctx.save();
+    ctx.globalAlpha = (1 - k);
+    ctx.strokeStyle = col; ctx.fillStyle = hexA(col, 0.22); ctx.lineWidth = 2;
+    if (T.glow > 0.8) { ctx.shadowColor = col; ctx.shadowBlur = 8; }
+    const grow = easeOut(Math.min(1, k * 1.6));
+    for (const sp of this.spikes) {
+      const L = sp.len * grow;
+      const ex = this.x + Math.cos(sp.a) * L, ey = this.y + Math.sin(sp.a) * L;
+      const mx = this.x + Math.cos(sp.a) * L * 0.5, my = this.y + Math.sin(sp.a) * L * 0.5;
+      const wx = Math.cos(sp.a + Math.PI / 2) * L * 0.16, wy = Math.sin(sp.a + Math.PI / 2) * L * 0.16;
+      ctx.beginPath();
+      ctx.moveTo(this.x, this.y); ctx.lineTo(mx + wx, my + wy); ctx.lineTo(ex, ey); ctx.lineTo(mx - wx, my - wy);
+      ctx.closePath(); ctx.fill(); ctx.stroke();
+    }
+    ctx.restore();
+  }
+}
+
+// Rising poison cloud.
+export class Gas extends Effect {
+  constructor(x, y, r, color) {
+    super(1.0); this.x = x; this.y = y; this.r = r; this.color = color;
+    this.blobs = [];
+    for (let i = 0; i < 6; i++) this.blobs.push({ dx: (Math.random() - 0.5) * r, dy: (Math.random() - 0.5) * r * 0.6, r: r * (0.3 + Math.random() * 0.4), vy: -10 - Math.random() * 16 });
+  }
+  draw(ctx) {
+    const T = getTheme(); const k = this.k;
+    ctx.save();
+    ctx.globalAlpha = (1 - k) * 0.32;
+    ctx.fillStyle = T.fx(this.color);
+    for (const b of this.blobs) {
+      ctx.beginPath();
+      ctx.arc(this.x + b.dx, this.y + b.dy + b.vy * k * 4, b.r * (0.7 + k * 0.8), 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+}
+
+// Radiant rays (holy / sun / light).
+export class Rays extends Effect {
+  constructor(x, y, r, color) { super(0.55); this.x = x; this.y = y; this.r = r; this.color = color; this.rot = Math.random() * Math.PI; }
+  draw(ctx) {
+    const T = getTheme(); const k = this.k; const col = T.fx(this.color);
+    ctx.save();
+    ctx.translate(this.x, this.y); ctx.rotate(this.rot + k * 0.5);
+    ctx.globalAlpha = (1 - k) * 0.6; ctx.fillStyle = col;
+    if (T.glow > 0.6) { ctx.shadowColor = col; ctx.shadowBlur = 12; }
+    const n = 12; const len = this.r * (0.6 + easeOut(k) * 0.8);
+    for (let i = 0; i < n; i++) {
+      ctx.rotate((Math.PI * 2) / n);
+      ctx.beginPath();
+      ctx.moveTo(0, -2.4); ctx.lineTo(len, -0.6); ctx.lineTo(len, 0.6); ctx.lineTo(0, 2.4);
+      ctx.closePath(); ctx.fill();
+    }
+    ctx.restore();
+  }
+}
+
 function hexA(hex, a) {
   if (hex[0] !== '#' || hex.length < 7) return hex;
   const n = parseInt(hex.slice(1), 16);

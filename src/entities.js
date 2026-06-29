@@ -28,6 +28,10 @@ export class Enemy {
     this.scale = scale;
     this.dead = false;
     this.reachedGate = false;
+    // attack lunge at the gate
+    this.attacking = false;
+    this.attackT = 0;
+    this.hitApplied = false;
     // status effects
     this.burn = null; // {dps, t}
     this.slowT = 0;
@@ -71,10 +75,14 @@ export class Enemy {
       this.x += this.kx * dt;
       this.kx *= 0.86;
     }
-    // march toward the gate (which sits on the left)
-    this.x -= this.speed * dt;
-    if (this.x <= gateX + this.radius) {
-      this.reachedGate = true;
+    // march toward the gate (which sits on the left); stop once we arrive so the
+    // lunge animation plays in place (the game drives the attack timing).
+    if (!this.reachedGate) {
+      this.x -= this.speed * dt;
+      if (this.x <= gateX + this.radius) {
+        this.reachedGate = true;
+        this.x = gateX + this.radius;
+      }
     }
   }
 }

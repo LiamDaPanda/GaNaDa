@@ -10,7 +10,7 @@ import { drawDokkaebi, drawGate, drawBackground, brushStroke, inkBlob } from './
 import { UPGRADES } from './upgrades.js';
 import { getTheme } from './themes.js';
 import { t } from './i18n.js';
-import { Ring, Flash, Bolt, Beam, Shards, Streak, Wisp } from './effects.js';
+import { Ring, Flash, Bolt, Beam, Shards, Streak, Wisp, Smoke, Crack, Crystal, Gas, Rays } from './effects.js';
 
 const SAVE_KEY = 'ganada_save_v1';
 
@@ -39,6 +39,7 @@ export class Game {
     this.shake = 0;
     this.screenFlash = { a: 0, color: '#ffffff' };
     this.wispTimer = 0;
+    this.gateGlow = 0; // cast-charge brightening at the gate
 
     this.stroke = [];        // current drawing points (screen space)
     this.drawing = false;
@@ -280,6 +281,15 @@ export class Game {
 
     const origin = { x: this.gateX, y: this.laneY - 30 };
 
+    // cast wind-up: the gate's ward charges and pulses energy out
+    this.gateGlow = 1;
+    this.effects.push(new Flash(origin.x, origin.y, 30, 0.28, atk.glow));
+    this.effects.push(new Ring(origin.x, origin.y, 3, 30, 0.32, atk.glow, 3));
+    for (let i = 0; i < 8; i++) {
+      this.particles.push(new Particle(origin.x + (Math.random() * 30 - 15), origin.y + (Math.random() * 30 - 15),
+        atk.glow, { angle: Math.random() * Math.PI * 2, speed: 30 + Math.random() * 50, life: 0.3, size: 2, gravity: 0 }));
+    }
+
     switch (atk.kind) {
       case 'projectile': {
         const target = this.nearestEnemy(this.W, this.laneY) || { x: this.W, y: this.laneY };
@@ -423,18 +433,54 @@ export class Game {
     return best;
   }
 
+  // Element-specific impact flavour layered on top of the generic blast.
+  elementBurst(x, y, atk, R) {
+    const el = atk.element;
+    if (el === 'fire') {
+      this.effects.push(new Smoke(x, y - 6, R * 0.7));
+      for (let i = 0; i < 14; i++) {
+        this.particles.push(new Particle(x + (Math.random() * 30 - 15), y, i % 2 ? atk.glow : atk.color,
+          { angle: -Math.PI / 2 + (Math.random() - 0.5) * 1.2, speed: 50 + Math.random() * 90, life: 0.6, size: 2 + Math.random() * 3, gravity: -40 }));
+      }
+    } else if (el === 'ice') {
+      this.effects.push(new Crystal(x, y, R * 0.9, atk.glow));
+    } else if (el === 'earth') {
+      this.effects.push(new Crack(x, this.laneY + 6, R, atk.color));
+      for (let i = 0; i < 12; i++) {
+        this.particles.push(new Particle(x, y, atk.color,
+          { angle: -Math.PI / 2 + (Math.random() - 0.5) * 1.4, speed: 80 + Math.random() * 110, life: 0.7, size: 2 + Math.random() * 4, gravity: 320 }));
+      }
+    } else if (el === 'poison') {
+      this.effects.push(new Gas(x, y, R * 0.9, atk.glow));
+    } else if (el === 'water') {
+      this.effects.push(new Ring(x, this.laneY + 6, 6, R * 0.9, 0.4, atk.color, 3));
+      for (let i = 0; i < 12; i++) {
+        this.particles.push(new Particle(x, y, atk.glow,
+          { angle: -Math.PI / 2 + (Math.random() - 0.5) * 1.0, speed: 70 + Math.random() * 70, life: 0.5, size: 2 + Math.random() * 2, gravity: 300 }));
+      }
+    } else if (el === 'holy' || el === 'sun' || el === 'light') {
+      this.effects.push(new Rays(x, y, R, atk.glow));
+    } else if (el === 'shadow') {
+      this.effects.push(new Smoke(x, y, R * 0.8));
+      this.effects.push(new Ring(x, y, R * 0.9, 6, 0.4, atk.color, 3)); // imploding
+    } else if (el === 'wind') {
+      this.effects.push(new Ring(x, y, 6, R, 0.4, atk.glow, 2));
+      this.effects.push(new Ring(x, y, 6, R * 0.7, 0.3, atk.glow, 2));
+    }
+  }
+
   explode(x, y, atk, dmg) {
     this.shake = Math.min(18, this.shake + (atk.kind === 'nova' ? 12 : 7));
     this.spawnBurst(x, y, atk.color, atk.kind === 'nova' ? 60 : 30);
-    // animated impact: flash core + expanding shockwave ring
+    // animated impact: flash core + expanding shockwave ring + element flavour
     const R = Math.max(40, atk.radius || 70);
     this.effects.push(new Flash(x, y, R * 0.7, 0.3, atk.glow));
     this.effects.push(new Ring(x, y, 8, R * (atk.kind === 'nova' ? 1.4 : 1.1), atk.kind === 'nova' ? 0.6 : 0.45, atk.color, 6));
+    this.elementBurst(x, y, atk, R);
     if (atk.kind === 'nova') {
       this.effects.push(new Ring(x, y, 8, R * 1.7, 0.8, atk.glow, 3));
       this.flashScreen(atk.glow, 0.18);
     }
-    if (atk.freeze) this.effects.push(new Shards(x, y, 9, R * 0.8, atk.glow));
     if (atk.element === 'lightning') {
       for (let i = 0; i < 3; i++) {
         this.effects.push(new Bolt(x, y - R, x + (Math.random() * 2 - 1) * R * 0.6, y, atk.color));
@@ -826,16 +872,24 @@ export class Game {
     for (const e of this.enemies) {
       e.update(dt, this.gateX);
       if (e.reachedGate && !e.dead) {
-        this.state.gateHp -= e.damage;
-        this.shake = Math.min(20, this.shake + 6);
-        Audio.gateHit();
-        this.buzz(this.state.gateHp <= 0 ? 120 : 25);
-        this.spawnBurst(this.gateX + 10, e.y, '#a85436', 14);
-        e.dead = true;
-        if (this.state.gateHp <= 0) {
-          this.state.gateHp = 0;
-          this.triggerGameOver();
+        // lunge forward, land the hit mid-lunge, then vanish
+        e.attacking = true;
+        e.attackT += dt;
+        if (e.attackT >= 0.16 && !e.hitApplied) {
+          e.hitApplied = true;
+          this.state.gateHp -= e.damage;
+          this.shake = Math.min(20, this.shake + 6);
+          Audio.gateHit();
+          this.buzz(this.state.gateHp <= 0 ? 120 : 25);
+          this.spawnBurst(this.gateX + 14, e.y, '#a85436', 16);
+          this.effects.push(new Ring(this.gateX + 14, e.y, 4, 34, 0.35, '#d9764a', 3));
+          this.effects.push(new Flash(this.gateX + 14, e.y, 24, 0.25, '#ffb38a'));
+          if (this.state.gateHp <= 0) {
+            this.state.gateHp = 0;
+            this.triggerGameOver();
+          }
         }
+        if (e.attackT >= 0.34) e.dead = true;
       }
     }
 
@@ -864,6 +918,7 @@ export class Game {
     if (this.shake > 0) this.shake = Math.max(0, this.shake - dt * 40);
     if (this.lowInkFlash > 0) this.lowInkFlash -= dt;
     if (this.screenFlash.a > 0) this.screenFlash.a = Math.max(0, this.screenFlash.a - dt * 0.9);
+    if (this.gateGlow > 0) this.gateGlow = Math.max(0, this.gateGlow - dt * 2.4);
     if (this.comboTimer > 0) {
       this.comboTimer -= dt;
       if (this.comboTimer <= 0) this.combo = 0;
@@ -888,7 +943,7 @@ export class Game {
       ctx.translate((Math.random() - 0.5) * this.shake, (Math.random() - 0.5) * this.shake);
     }
     drawBackground(ctx, this.W, this.H, this.laneY, this.state.wave, time);
-    drawGate(ctx, this.gateX, this.laneY, this.H, this.state.gateHp / this.state.gateMax, time);
+    drawGate(ctx, this.gateX, this.laneY, this.H, this.state.gateHp / this.state.gateMax, time, this.gateGlow);
 
     // enemies sorted by depth (y)
     const sorted = [...this.enemies].sort((a, b) => a.y - b.y);
