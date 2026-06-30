@@ -465,10 +465,10 @@ export function drawDokkaebi(ctx, e, time = 0) {
     ctx.translate(-x, -y);
   }
 
-  // ground shadow
+  // ground shadow (under the round body)
   ctx.save();
-  ctx.translate(x, e.y + r * 0.98); ctx.scale(1, 0.28);
-  inkBlob(ctx, 0, 0, r * 0.82, seed + 3, 0.3, 9);
+  ctx.translate(x, e.y + r * 1.78); ctx.scale(1, 0.26);
+  inkBlob(ctx, 0, 0, r * 0.8, seed + 3, 0.3, 9);
   ctx.fillStyle = 'rgba(0,0,0,0.34)'; ctx.fill();
   ctx.restore();
 
@@ -476,27 +476,23 @@ export function drawDokkaebi(ctx, e, time = 0) {
   if (frozen) body = '#6fb6d6';
   body = T.fx(body);
 
-  // ORV-style 도깨비: a fluffy near-square head, short horns, big red eyes,
-  // a fanged grin and furry hands cupping its own cheeks — over a draped cloak.
+  // ORV-style 도깨비: a fluffy round head, short horns, big red eyes and a
+  // fanged grin, sitting on a round body that carries the type colour.
   const furBase = flash ? '#ffffff' : mix(body, '#efe6d2', 0.72);
   const furLt = flash ? '#ffffff' : mix(body, '#fbf5e8', 0.86);
   const furDk = flash ? '#e8e8ee' : mix(body, '#b8ab8f', 0.5);
 
-  // --- draped cloak / robe (behind the head, carries the type colour) ---
+  // --- round body (behind the head, carries the type colour) ---
   {
-    const cy0 = y + r * 0.45, hem = y + r * 1.78;
+    const byc = y + r * 1.04, brx = r * 0.82, bry = r * 0.8;
     ctx.beginPath();
-    ctx.moveTo(x - r * 0.46, cy0);
-    ctx.quadraticCurveTo(x - r * 1.18, y + r * 1.0, x - r * 1.02, hem);
-    ctx.lineTo(x - r * 0.62, hem - r * 0.13); ctx.lineTo(x - r * 0.32, hem);
-    ctx.lineTo(x, hem - r * 0.15); ctx.lineTo(x + r * 0.32, hem);
-    ctx.lineTo(x + r * 0.62, hem - r * 0.13); ctx.lineTo(x + r * 1.02, hem);
-    ctx.quadraticCurveTo(x + r * 1.18, y + r * 1.0, x + r * 0.46, cy0);
-    ctx.closePath();
-    const cg = ctx.createLinearGradient(x, cy0, x, hem);
-    cg.addColorStop(0, shift(body, 6)); cg.addColorStop(1, shift(body, -56));
+    ctx.ellipse(x, byc, brx, bry, 0, 0, Math.PI * 2);
+    const cg = ctx.createRadialGradient(x - brx * 0.32, byc - bry * 0.42, brx * 0.2, x, byc, brx * 1.3);
+    cg.addColorStop(0, flash ? '#fff' : shift(body, 22));
+    cg.addColorStop(0.7, flash ? '#f0f0f4' : body);
+    cg.addColorStop(1, flash ? '#d8d8e0' : shift(body, -52));
     ctx.fillStyle = cg; ctx.fill();
-    ctx.lineWidth = Math.max(1, r * 0.05); ctx.strokeStyle = 'rgba(8,6,12,0.5)'; ctx.stroke();
+    ctx.lineWidth = Math.max(1, r * 0.05); ctx.strokeStyle = 'rgba(8,6,12,0.45)'; ctx.stroke();
   }
 
   const fr = rng(seed + 5);
