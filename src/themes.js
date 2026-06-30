@@ -50,40 +50,25 @@ export function adjust(hex, ds = 0, dl = 0, dh = 0) {
   return rgbToHex(...hslToRgb(h, s, l));
 }
 
-// Map any colour onto an ink → plum → rice-paper duotone (by luminance) so the
-// art and spell effects read as warm, pink-tinted sumi-e.
-export function tintPlum(hex) {
-  if (!hex || hex[0] !== '#' || hex.length < 7) return hex;
-  const [r, g, b] = hexToRgb(hex);
-  const l = Math.min(1, (0.299 * r + 0.587 * g + 0.114 * b) / 255);
-  const dark = [40, 28, 34], mid = [162, 96, 126], paper = [247, 214, 226];
-  const lerp = (a, c, t) => a + (c - a) * t;
-  let R, G, B;
-  if (l < 0.5) { const t = l / 0.5; R = lerp(dark[0], mid[0], t); G = lerp(dark[1], mid[1], t); B = lerp(dark[2], mid[2], t); }
-  else { const t = (l - 0.5) / 0.5; R = lerp(mid[0], paper[0], t); G = lerp(mid[1], paper[1], t); B = lerp(mid[2], paper[2], t); }
-  return rgbToHex(R, G, B);
-}
-
 export const THEMES = {
   calligraphy: {
     id: 'calligraphy', name: '먹빛', nameEn: 'Calligraphy', style: 'sumi',
-    // warm tea-stained rice-paper night
-    sky: [[0, '#241c14'], [0.5, '#2b2318'], [0.78, '#262013'], [1, '#19130c']],
-    star: '#e6d8ba',
-    moon: { core: '#f1e6cb', edge: '#cab88a', halo: 'rgba(228,208,168,0.22)', ring: null },
-    ridge: ['#2a2316', '#332a1b', '#3d3120'],
-    crest: 'rgba(18,12,7,0.5)',
-    ground: ['rgba(46,36,22,0.96)', '#120d06'],
-    mist: '#dcc9a6',
-    taegeuk: ['#b0566f', '#7a5340'],
-    glow: 0.6, additive: false,
+    sky: [[0, '#0d1124'], [0.5, '#161a30'], [0.78, '#1b1d2c'], [1, '#100b1a']],
+    star: '#efe6cf',
+    moon: { core: '#fbf5e3', edge: '#e3d7b4', halo: 'rgba(239,230,207,0.26)', ring: null },
+    ridge: ['#1b1f38', '#232845', '#2b3056'],
+    crest: 'rgba(12,12,24,0.55)',
+    ground: ['rgba(40,32,54,0.96)', '#0d0a16'],
+    mist: '#cdd7ee',
+    taegeuk: ['#9c3b34', '#345877'],
+    glow: 0.55, additive: false,
     stroke: {
       bleed: 'rgba(225,216,193,0.18)', bleedShadow: 'rgba(232,224,200,0.5)', bleedBlur: 6,
       body: 'rgba(238,231,210,0.92)', core: 'rgba(150,140,118,0.5)', head: '#efe7d2',
     },
-    // plum duotone: spell effects and creatures read pink-tinted on warm paper
-    fx: (c) => tintPlum(c),
-    ui: { ink: '#c08aa0', gold: '#cf7e9e', panel: 'rgba(26,18,16,0.93)', line: 'rgba(222,196,180,0.16)', text: '#f4e9e2' },
+    // pull element colours toward ink — muted, black-and-white-ish, some hue left
+    fx: (c) => adjust(c, -0.3, 0),
+    ui: { ink: '#9aa7b8', gold: '#c79a3e', panel: 'rgba(20,17,28,0.93)', line: 'rgba(220,210,188,0.14)', text: '#f3eefc' },
   },
 
 };

@@ -310,8 +310,8 @@ function hexA(hex, a) {
 // kept only as a soft glow so the look stays black-and-white-ish.
 // ===========================================================================
 
-const INK_LIGHT = '#f6d3e0'; // soft plum-blossom pink
-const INK_DEEP = '#3a1f2a';
+const INK_LIGHT = '#efe7d2'; // warm rice-paper ink
+const INK_DEEP = '#0e0b07';
 
 // Local organic-blob + tapered-ribbon helpers (kept self-contained).
 function eRng(seed) { let s = (seed >>> 0) || 1; return () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; }; }

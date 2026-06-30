@@ -117,7 +117,7 @@ html, body {
   width: 100%;
   border-radius: 7px;
   transition: width 0.15s ease;
-  background: linear-gradient(90deg, #7a4a58, #c07a92);
+  background: #6f8a4a;
 }
 .bar-fill.ink {
   background: linear-gradient(90deg, #3c4a5e, var(--ink));
@@ -481,7 +481,7 @@ html, body {
   font-size: 44px;
   white-space: nowrap;
   letter-spacing: 0.02em;
-  background: linear-gradient(90deg, #b85274, var(--gold), #d99f86, #c89a78);
+  background: linear-gradient(90deg, #b5532f, var(--gold), #6f8aa0, #8a6f99);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
