@@ -344,8 +344,15 @@ function eRibbon(ctx, pts, widths, color) {
   }
   ctx.beginPath();
   ctx.moveTo(left[0].x, left[0].y);
-  for (let i = 1; i < n; i++) ctx.lineTo(left[i].x, left[i].y);
-  for (let i = n - 1; i >= 0; i--) ctx.lineTo(right[i].x, right[i].y);
+  for (let i = 1; i < n - 1; i++) {
+    ctx.quadraticCurveTo(left[i].x, left[i].y, (left[i].x + left[i + 1].x) / 2, (left[i].y + left[i + 1].y) / 2);
+  }
+  ctx.lineTo(left[n - 1].x, left[n - 1].y);
+  ctx.lineTo(right[n - 1].x, right[n - 1].y);
+  for (let i = n - 1; i > 1; i--) {
+    ctx.quadraticCurveTo(right[i - 1].x, right[i - 1].y, (right[i - 1].x + right[i - 2].x) / 2, (right[i - 1].y + right[i - 2].y) / 2);
+  }
+  ctx.lineTo(right[0].x, right[0].y);
   ctx.closePath();
   ctx.fillStyle = color; ctx.fill();
   ctx.beginPath();
