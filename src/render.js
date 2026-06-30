@@ -481,7 +481,6 @@ export function drawDokkaebi(ctx, e, time = 0) {
   const furBase = flash ? '#ffffff' : mix(body, '#efe6d2', 0.72);
   const furLt = flash ? '#ffffff' : mix(body, '#fbf5e8', 0.86);
   const furDk = flash ? '#e8e8ee' : mix(body, '#b8ab8f', 0.5);
-  const ty = y - r * 1.02;
 
   // --- draped cloak / robe (behind the head, carries the type colour) ---
   {
@@ -502,34 +501,32 @@ export function drawDokkaebi(ctx, e, time = 0) {
 
   const fr = rng(seed + 5);
 
-  // --- short curved amber horns poking through the top fluff ---
+  // --- two small solid horns (bases tucked behind the head) ---
   for (const s of [-1, 1]) {
-    const hx = x + s * r * 0.5, hy = y - r * 0.78;
-    brushStroke(ctx, [
-      { x: hx, y: hy + r * 0.16 },
-      { x: hx + s * r * 0.2, y: hy - r * 0.16 },
-      { x: hx + s * r * 0.04, y: hy - r * 0.54 },
-    ], r * 0.17, '#c79a46', true);
-    ctx.save(); ctx.globalAlpha = 0.55;
-    brushStroke(ctx, [{ x: hx + s * r * 0.13, y: hy - r * 0.26 }, { x: hx + s * r * 0.04, y: hy - r * 0.54 }], r * 0.06, '#6e4f22', true);
+    ctx.save();
+    ctx.translate(x + s * r * 0.44, y - r * 0.64);
+    ctx.scale(s, 1);
+    const hw = r * 0.17, hh = r * 0.56;
+    ctx.beginPath();
+    ctx.moveTo(-hw * 0.5, hh * 0.12);
+    ctx.quadraticCurveTo(-hw * 0.2, -hh * 0.5, hw * 0.24, -hh * 0.96);
+    ctx.quadraticCurveTo(hw * 0.6, -hh * 0.55, hw * 0.74, hh * 0.06);
+    ctx.quadraticCurveTo(hw * 0.2, hh * 0.3, -hw * 0.5, hh * 0.12);
+    ctx.closePath();
+    const hg = ctx.createLinearGradient(-hw, 0, hw, 0);
+    hg.addColorStop(0, '#d9af5a'); hg.addColorStop(1, '#9a7430');
+    ctx.fillStyle = flash ? '#fff' : hg; ctx.fill();
+    ctx.lineWidth = Math.max(1, r * 0.025); ctx.strokeStyle = 'rgba(60,42,16,0.5)'; ctx.stroke();
     ctx.restore();
   }
 
-  // --- the fluffy rounded head (round, but not a perfect sphere) ---
-  const head = [
-    { x: x, y: y - r * 1.04 },
-    { x: x + r * 0.6, y: y - r * 0.94 },
-    { x: x + r * 0.92, y: y - r * 0.5 },
-    { x: x + r * 0.98, y: y + r * 0.06 },
-    { x: x + r * 0.82, y: y + r * 0.62 },
-    { x: x + r * 0.46, y: y + r * 0.96 },
-    { x: x, y: y + r * 1.02 },
-    { x: x - r * 0.46, y: y + r * 0.96 },
-    { x: x - r * 0.82, y: y + r * 0.62 },
-    { x: x - r * 0.98, y: y + r * 0.06 },
-    { x: x - r * 0.92, y: y - r * 0.5 },
-    { x: x - r * 0.6, y: y - r * 0.94 },
-  ];
+  // --- the fluffy rounded head (soft egg, no hard corners) ---
+  const head = [];
+  for (let i = 0; i < 14; i++) {
+    const a = -Math.PI / 2 + (i / 14) * Math.PI * 2;
+    const wide = 1 - 0.08 * Math.sin(a); // a touch wider at the top
+    head.push({ x: x + Math.cos(a) * r * 0.95 * wide, y: y + Math.sin(a) * r * 1.04 });
+  }
   smoothBlob(ctx, head);
   if (flash) ctx.fillStyle = '#fff';
   else {
@@ -545,7 +542,7 @@ export function drawDokkaebi(ctx, e, time = 0) {
   ctx.beginPath(); ctx.arc(x, y - r * 0.05, r * 0.82, Math.PI * 0.92, Math.PI * 1.4); ctx.stroke();
   ctx.restore();
 
-  // --- soft fur: a fluffy ruff along the bottom + a few stray crown hairs ---
+  // --- soft fluffy ruff along the bottom (chin) ---
   for (let i = 0; i <= 9; i++) {
     const a = Math.PI * 0.3 + (i / 9) * Math.PI * 0.4; // lower arc (chin)
     const bxp = x + Math.cos(a) * r * 0.78;
@@ -554,55 +551,13 @@ export function drawDokkaebi(ctx, e, time = 0) {
     ctx.fillStyle = i % 2 ? furLt : furBase;
     inkBlob(ctx, bxp, byp, pr, seed + i * 9, 0.4, 8); ctx.fill();
   }
-  ctx.lineCap = 'round';
-  for (let i = 0; i < 7; i++) {
-    const a = -Math.PI * 0.82 + (i / 6) * Math.PI * 0.64;
-    const bxp = x + Math.cos(a) * r * 0.84, byp = y + Math.sin(a) * r * 0.94;
-    const len = r * (0.08 + fr() * 0.12);
-    brushStroke(ctx, [{ x: bxp, y: byp }, { x: bxp + Math.cos(a) * len, y: byp + Math.sin(a) * len }], r * 0.035, furLt, true);
-  }
 
-  // --- boss regalia: red aura + golden crown ---
+  // --- boss regalia: a red aura ring ---
   if (boss) {
     ctx.save();
     ctx.strokeStyle = withAlpha(T.fx('#ff7a3a'), 0.45);
     ctx.lineWidth = 2.5; ctx.shadowColor = T.fx('#ff5a2a'); ctx.shadowBlur = 16;
     ctx.beginPath(); ctx.ellipse(x, y, r * 1.25, r * 1.32, 0, 0, Math.PI * 2); ctx.stroke();
-    ctx.restore();
-    ctx.save(); ctx.shadowColor = 'rgba(180,120,40,0.6)'; ctx.shadowBlur = 6 * G + 3;
-    for (let i = -2; i <= 2; i++) {
-      brushStroke(ctx, [{ x: x + i * r * 0.26, y: ty + r * 0.06 }, { x: x + i * r * 0.26 + 2, y: ty - r * 0.34 }], r * 0.12, T.ui.gold, true);
-    }
-    ctx.restore();
-  }
-
-  // --- furry hands cupping the cheeks (the signature ORV pose) ---
-  for (const s of [-1, 1]) {
-    ctx.save();
-    ctx.translate(x + s * r * 0.82, y + r * 0.36);
-    ctx.rotate(s * 0.16);
-    if (s > 0) ctx.scale(-1, 1); // draw one paw, mirror for the other side
-    const pw = r * 0.44, ph = r * 0.58;
-    // rounded mitten: rounded palm with three soft finger scallops on top
-    ctx.beginPath();
-    ctx.moveTo(-pw, ph * 0.22);
-    ctx.quadraticCurveTo(-pw * 1.04, -ph * 0.5, -pw * 0.55, -ph * 0.84);
-    ctx.quadraticCurveTo(-pw * 0.36, -ph * 1.04, -pw * 0.14, -ph * 0.82);
-    ctx.quadraticCurveTo(0, -ph * 1.05, pw * 0.22, -ph * 0.82);
-    ctx.quadraticCurveTo(pw * 0.42, -ph * 1.0, pw * 0.58, -ph * 0.72);
-    ctx.quadraticCurveTo(pw * 1.04, -ph * 0.4, pw, ph * 0.2);
-    ctx.quadraticCurveTo(pw * 0.96, ph * 0.96, 0, ph);
-    ctx.quadraticCurveTo(-pw * 0.96, ph * 0.96, -pw, ph * 0.22);
-    ctx.closePath();
-    const pg = ctx.createRadialGradient(-pw * 0.3, -ph * 0.4, pw * 0.2, 0, 0, ph * 1.2);
-    pg.addColorStop(0, furLt); pg.addColorStop(0.7, furBase); pg.addColorStop(1, furDk);
-    ctx.fillStyle = flash ? '#fff' : pg; ctx.fill();
-    ctx.lineWidth = Math.max(1, r * 0.04); ctx.strokeStyle = 'rgba(22,15,10,0.32)'; ctx.stroke();
-    // two soft finger creases
-    ctx.strokeStyle = 'rgba(40,28,18,0.26)'; ctx.lineWidth = Math.max(1, r * 0.028); ctx.lineCap = 'round';
-    for (const cx2 of [-pw * 0.2, pw * 0.22]) {
-      ctx.beginPath(); ctx.moveTo(cx2, -ph * 0.74); ctx.lineTo(cx2 * 0.7, -ph * 0.1); ctx.stroke();
-    }
     ctx.restore();
   }
 
