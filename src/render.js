@@ -482,92 +482,97 @@ export function drawDokkaebi(ctx, e, time = 0) {
   const furLt = flash ? '#ffffff' : mix(body, '#fbf5e8', 0.8);
   const furDk = flash ? '#e8e8ee' : mix(body, '#a89a7e', 0.45);
 
-  // --- two small solid horns (bases tucked behind the head) ---
-  for (const s of [-1, 1]) {
-    ctx.save();
-    ctx.translate(x + s * r * 0.46, y - r * 0.66);
-    ctx.scale(s, 1);
-    const hw = r * 0.26, hh = r * 0.92;
-    ctx.beginPath();
-    ctx.moveTo(-hw * 0.5, hh * 0.12);
-    ctx.quadraticCurveTo(-hw * 0.2, -hh * 0.5, hw * 0.24, -hh * 0.96);
-    ctx.quadraticCurveTo(hw * 0.6, -hh * 0.55, hw * 0.74, hh * 0.06);
-    ctx.quadraticCurveTo(hw * 0.2, hh * 0.3, -hw * 0.5, hh * 0.12);
-    ctx.closePath();
-    const hg = ctx.createLinearGradient(-hw, 0, hw, 0);
-    hg.addColorStop(0, '#d9af5a'); hg.addColorStop(1, '#9a7430');
-    ctx.fillStyle = flash ? '#fff' : hg; ctx.fill();
-    ctx.lineWidth = Math.max(1, r * 0.025); ctx.strokeStyle = 'rgba(60,42,16,0.5)'; ctx.stroke();
-    ctx.restore();
-  }
-
-  // --- the fluffy rounded head (soft egg, no hard corners) ---
-  const head = [];
-  for (let i = 0; i < 14; i++) {
-    const a = -Math.PI / 2 + (i / 14) * Math.PI * 2;
-    const wide = 1 - 0.08 * Math.sin(a); // a touch wider at the top
-    head.push({ x: x + Math.cos(a) * r * 0.95 * wide, y: y + Math.sin(a) * r * 1.04 });
-  }
-  smoothBlob(ctx, head);
-  if (flash) ctx.fillStyle = '#fff';
-  else {
-    const bg = ctx.createRadialGradient(x - r * 0.3, y - r * 0.5, r * 0.2, x, y, r * 1.25);
-    bg.addColorStop(0, furLt); bg.addColorStop(0.6, furBase); bg.addColorStop(1, furDk);
-    ctx.fillStyle = bg;
-  }
-  ctx.fill();
-  ctx.lineWidth = Math.max(1.2, r * 0.05); ctx.strokeStyle = 'rgba(20,14,10,0.4)'; ctx.stroke();
-  // soft rim light, upper-left
-  ctx.save(); ctx.globalAlpha = 0.5; ctx.strokeStyle = 'rgba(255,252,244,0.9)';
-  ctx.lineWidth = r * 0.1; ctx.lineCap = 'round';
-  ctx.beginPath(); ctx.arc(x, y - r * 0.05, r * 0.82, Math.PI * 0.92, Math.PI * 1.4); ctx.stroke();
-  ctx.restore();
-
-  // --- boss regalia: a red aura ring ---
   if (boss) {
-    ctx.save();
-    ctx.strokeStyle = withAlpha(T.fx('#ff7a3a'), 0.45);
-    ctx.lineWidth = 2.5; ctx.shadowColor = T.fx('#ff5a2a'); ctx.shadowBlur = 16;
-    ctx.beginPath(); ctx.ellipse(x, y, r * 1.25, r * 1.32, 0, 0, Math.PI * 2); ctx.stroke();
+    drawBossMask(ctx, x, y, r, { flash, G, T });
+  } else {
+    // --- the round head (soft egg, no hard corners) ---
+    const head = [];
+    for (let i = 0; i < 14; i++) {
+      const a = -Math.PI / 2 + (i / 14) * Math.PI * 2;
+      const wide = 1 - 0.08 * Math.sin(a);
+      head.push({ x: x + Math.cos(a) * r * 0.95 * wide, y: y + Math.sin(a) * r * 1.04 });
+    }
+    smoothBlob(ctx, head);
+    if (flash) ctx.fillStyle = '#fff';
+    else {
+      const bg = ctx.createRadialGradient(x - r * 0.3, y - r * 0.5, r * 0.2, x, y, r * 1.25);
+      bg.addColorStop(0, furLt); bg.addColorStop(0.6, furBase); bg.addColorStop(1, furDk);
+      ctx.fillStyle = bg;
+    }
+    ctx.fill();
+    ctx.lineWidth = Math.max(1.2, r * 0.05); ctx.strokeStyle = 'rgba(20,14,10,0.4)'; ctx.stroke();
+    ctx.save(); ctx.globalAlpha = 0.5; ctx.strokeStyle = 'rgba(255,252,244,0.9)';
+    ctx.lineWidth = r * 0.1; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.arc(x, y - r * 0.05, r * 0.82, Math.PI * 0.92, Math.PI * 1.4); ctx.stroke();
     ctx.restore();
-  }
 
-  // --- big slanted red eyes ---
-  const eyeCol = flash ? '#3a1410' : (boss ? '#ff7a36' : '#e23f29');
-  for (const s of [-1, 1]) {
-    const ex = x + s * r * 0.33, ey = y - r * 0.06;
-    ctx.save();
-    ctx.translate(ex, ey); ctx.rotate(s * 0.3);
-    ctx.fillStyle = '#180c08';
-    ctx.beginPath(); ctx.ellipse(0, 0, r * 0.27, r * 0.18, 0, 0, Math.PI * 2); ctx.fill();
-    if (!flash) { ctx.shadowColor = eyeCol; ctx.shadowBlur = 10 + G * 8; }
-    const ig = ctx.createRadialGradient(-r * 0.05, -r * 0.05, r * 0.02, 0, 0, r * 0.2);
-    ig.addColorStop(0, flash ? '#5a2018' : '#ffae84'); ig.addColorStop(0.5, eyeCol); ig.addColorStop(1, '#761a10');
-    ctx.fillStyle = ig;
-    ctx.beginPath(); ctx.ellipse(0, 0, r * 0.2, r * 0.135, 0, 0, Math.PI * 2); ctx.fill();
-    ctx.shadowBlur = 0;
-    ctx.fillStyle = '#160605';
-    ctx.beginPath(); ctx.ellipse(r * 0.02, 0, r * 0.06, r * 0.1, 0, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = 'rgba(255,244,236,0.85)';
-    ctx.beginPath(); ctx.arc(-r * 0.06, -r * 0.05, r * 0.032, 0, Math.PI * 2); ctx.fill();
-    ctx.restore();
-  }
+    // --- big slanted red eyes ---
+    const eyeCol = flash ? '#3a1410' : '#e23f29';
+    for (const s of [-1, 1]) {
+      const ex = x + s * r * 0.33, ey = y - r * 0.06;
+      ctx.save();
+      ctx.translate(ex, ey); ctx.rotate(s * 0.3);
+      ctx.fillStyle = '#180c08';
+      ctx.beginPath(); ctx.ellipse(0, 0, r * 0.27, r * 0.18, 0, 0, Math.PI * 2); ctx.fill();
+      if (!flash) { ctx.shadowColor = eyeCol; ctx.shadowBlur = 10 + G * 8; }
+      const ig = ctx.createRadialGradient(-r * 0.05, -r * 0.05, r * 0.02, 0, 0, r * 0.2);
+      ig.addColorStop(0, flash ? '#5a2018' : '#ffae84'); ig.addColorStop(0.5, eyeCol); ig.addColorStop(1, '#761a10');
+      ctx.fillStyle = ig;
+      ctx.beginPath(); ctx.ellipse(0, 0, r * 0.2, r * 0.135, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.shadowBlur = 0;
+      ctx.fillStyle = '#160605';
+      ctx.beginPath(); ctx.ellipse(r * 0.02, 0, r * 0.06, r * 0.1, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = 'rgba(255,244,236,0.85)';
+      ctx.beginPath(); ctx.arc(-r * 0.06, -r * 0.05, r * 0.032, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
+    }
 
-  // --- open fanged grin ---
-  const my = y + r * 0.47, mw = r * 0.56;
-  ctx.fillStyle = '#1b0708';
-  ctx.beginPath();
-  ctx.moveTo(x - mw / 2, my - r * 0.02);
-  ctx.quadraticCurveTo(x, my - r * 0.1, x + mw / 2, my - r * 0.02);
-  ctx.quadraticCurveTo(x + mw * 0.44, my + r * 0.32, x, my + r * 0.34);
-  ctx.quadraticCurveTo(x - mw * 0.44, my + r * 0.32, x - mw / 2, my - r * 0.02);
-  ctx.closePath(); ctx.fill();
-  ctx.fillStyle = '#f3ead6';
-  for (const s of [-1, 1]) {
-    const fxp = x + s * mw * 0.3;
+    // --- angry dark brows (a touch boss-like) ---
+    for (const s of [-1, 1]) {
+      brushStroke(ctx, [
+        { x: x + s * r * 0.12, y: y - r * 0.28 },
+        { x: x + s * r * 0.4, y: y - r * 0.36 },
+        { x: x + s * r * 0.56, y: y - r * 0.24 },
+      ], r * 0.08, '#1a0f0a', true);
+    }
+
+    // --- open fanged grin ---
+    const my = y + r * 0.47, mw = r * 0.56;
+    ctx.fillStyle = '#1b0708';
     ctx.beginPath();
-    ctx.moveTo(fxp - mw * 0.08, my - r * 0.02); ctx.lineTo(fxp + mw * 0.08, my - r * 0.02); ctx.lineTo(fxp, my + r * 0.13);
+    ctx.moveTo(x - mw / 2, my - r * 0.02);
+    ctx.quadraticCurveTo(x, my - r * 0.1, x + mw / 2, my - r * 0.02);
+    ctx.quadraticCurveTo(x + mw * 0.44, my + r * 0.32, x, my + r * 0.34);
+    ctx.quadraticCurveTo(x - mw * 0.44, my + r * 0.32, x - mw / 2, my - r * 0.02);
     ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#f3ead6';
+    for (const s of [-1, 1]) {
+      const fxp = x + s * mw * 0.3;
+      ctx.beginPath();
+      ctx.moveTo(fxp - mw * 0.08, my - r * 0.02); ctx.lineTo(fxp + mw * 0.08, my - r * 0.02); ctx.lineTo(fxp, my + r * 0.13);
+      ctx.closePath(); ctx.fill();
+    }
+
+    // --- horns from the FRONT (forehead), curling outward, boss-ish ---
+    for (const s of [-1, 1]) {
+      ctx.save();
+      ctx.translate(x + s * r * 0.32, y - r * 0.5);
+      ctx.scale(s, 1);
+      const hw = r * 0.28, hh = r * 1.0;
+      ctx.beginPath();
+      ctx.moveTo(-hw * 0.4, hh * 0.1);
+      ctx.quadraticCurveTo(-hw * 0.1, -hh * 0.45, hw * 0.15, -hh * 0.78);
+      ctx.quadraticCurveTo(hw * 0.5, -hh * 1.02, hw * 0.95, -hh * 0.9);
+      ctx.quadraticCurveTo(hw * 0.62, -hh * 0.66, hw * 0.7, -hh * 0.34);
+      ctx.quadraticCurveTo(hw * 0.85, -hh * 0.05, hw * 0.62, hh * 0.12);
+      ctx.quadraticCurveTo(hw * 0.2, hh * 0.26, -hw * 0.4, hh * 0.1);
+      ctx.closePath();
+      const hg = ctx.createLinearGradient(-hw, 0, hw, 0);
+      hg.addColorStop(0, '#e2b75e'); hg.addColorStop(1, '#8f6a2c');
+      ctx.fillStyle = flash ? '#fff' : hg; ctx.fill();
+      ctx.lineWidth = Math.max(1, r * 0.025); ctx.strokeStyle = 'rgba(60,42,16,0.55)'; ctx.stroke();
+      ctx.restore();
+    }
   }
 
   // frost shell
@@ -589,6 +594,114 @@ export function drawDokkaebi(ctx, e, time = 0) {
     ctx.fillText(e.def.name, x, by - 6);
   }
   ctx.restore();
+}
+
+// Boss 도깨비: a traditional 귀면 (goblin-face) mask in black ink — curling
+// horns, flame brows, bulging red eyes and a row of big square teeth.
+function drawBossMask(ctx, x, y, r, o) {
+  const { flash, G, T } = o;
+  const ink = flash ? '#ffffff' : '#161109';
+  const tooth = flash ? '#ffffff' : '#f1ead6';
+  const eyeCol = flash ? '#3a1410' : '#ff5326';
+
+  // red aura behind the mask
+  ctx.save();
+  ctx.shadowColor = T.fx('#ff5a2a'); ctx.shadowBlur = 26; ctx.globalAlpha = 0.7;
+  ctx.fillStyle = withAlpha('#ff5a2a', 0.16);
+  ctx.beginPath(); ctx.arc(x, y, r * 1.02, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
+
+  // ===== dark ink silhouette: ornaments first, then the face over them =====
+  // central flame crest
+  for (let i = -1; i <= 1; i++) {
+    brushStroke(ctx, [
+      { x: x + i * r * 0.24, y: y - r * 0.5 },
+      { x: x + i * r * 0.3, y: y - r * 0.98 },
+      { x: x + i * r * 0.18, y: y - r * 1.32 },
+    ], r * 0.15, ink, true);
+  }
+  // big curling horns (top corners, hooking outward)
+  for (const s of [-1, 1]) {
+    brushStroke(ctx, [
+      { x: x + s * r * 0.45, y: y - r * 0.48 },
+      { x: x + s * r * 0.86, y: y - r * 1.0 },
+      { x: x + s * r * 1.2, y: y - r * 1.26 },
+      { x: x + s * r * 1.46, y: y - r * 1.04 },
+      { x: x + s * r * 1.4, y: y - r * 0.74 },
+    ], r * 0.2, ink, true);
+  }
+  // cheek flame whiskers sweeping out
+  for (const s of [-1, 1]) {
+    brushStroke(ctx, [
+      { x: x + s * r * 0.55, y: y + r * 0.02 },
+      { x: x + s * r * 1.1, y: y - r * 0.12 },
+      { x: x + s * r * 1.46, y: y - r * 0.36 },
+    ], r * 0.15, ink, true);
+    brushStroke(ctx, [
+      { x: x + s * r * 0.5, y: y + r * 0.34 },
+      { x: x + s * r * 1.02, y: y + r * 0.42 },
+      { x: x + s * r * 1.34, y: y + r * 0.24 },
+    ], r * 0.13, ink, true);
+  }
+  // face mass
+  ctx.fillStyle = ink;
+  ctx.beginPath(); ctx.ellipse(x, y + r * 0.05, r * 0.92, r * 0.98, 0, 0, Math.PI * 2); ctx.fill();
+  // flame brows on the face
+  for (const s of [-1, 1]) {
+    brushStroke(ctx, [
+      { x: x + s * r * 0.06, y: y - r * 0.34 },
+      { x: x + s * r * 0.46, y: y - r * 0.48 },
+      { x: x + s * r * 0.78, y: y - r * 0.38 },
+      { x: x + s * r * 0.96, y: y - r * 0.58 },
+    ], r * 0.16, ink, true);
+  }
+
+  // ===== bulging eyes =====
+  for (const s of [-1, 1]) {
+    const ex = x + s * r * 0.42, ey = y - r * 0.04;
+    ctx.fillStyle = tooth;
+    ctx.beginPath(); ctx.arc(ex, ey, r * 0.26, 0, Math.PI * 2); ctx.fill();
+    ctx.save();
+    if (!flash) { ctx.shadowColor = eyeCol; ctx.shadowBlur = 14 + G * 10; }
+    ctx.fillStyle = eyeCol;
+    ctx.beginPath(); ctx.arc(ex, ey, r * 0.15, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+    ctx.fillStyle = '#150505';
+    ctx.beginPath(); ctx.arc(ex, ey, r * 0.07, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = 'rgba(255,240,230,0.85)';
+    ctx.beginPath(); ctx.arc(ex - r * 0.05, ey - r * 0.05, r * 0.03, 0, Math.PI * 2); ctx.fill();
+  }
+  // trilobe nose
+  ctx.fillStyle = tooth;
+  for (const dx of [-0.12, 0, 0.12]) {
+    ctx.beginPath(); ctx.arc(x + dx * r, y + r * 0.24, r * 0.066, 0, Math.PI * 2); ctx.fill();
+  }
+
+  // ===== snarling mouth with big square teeth =====
+  const my = y + r * 0.62, mw = r * 1.0, mh = r * 0.52;
+  ctx.fillStyle = flash ? '#ffffff' : '#0b0905';
+  ctx.beginPath();
+  ctx.moveTo(x - mw / 2, my - mh * 0.45);
+  ctx.quadraticCurveTo(x, my - mh * 0.64, x + mw / 2, my - mh * 0.45);
+  ctx.lineTo(x + mw * 0.34, my + mh * 0.62);
+  ctx.quadraticCurveTo(x, my + mh * 0.8, x - mw * 0.34, my + mh * 0.62);
+  ctx.closePath(); ctx.fill();
+  ctx.fillStyle = tooth;
+  const tn = 5, totalW = mw * 0.72, gap = totalW / tn;
+  for (let i = 0; i < tn; i++) {
+    ctx.fillRect(x - totalW / 2 + i * gap + gap * 0.12, my - mh * 0.36, gap * 0.76, mh * 0.52);
+  }
+  for (let i = 0; i < 2; i++) {
+    ctx.fillRect(x - gap * 0.82 + i * gap * 0.9, my + mh * 0.2, gap * 0.7, mh * 0.3);
+  }
+  // curled tusks at the mouth corners
+  for (const s of [-1, 1]) {
+    brushStroke(ctx, [
+      { x: x + s * mw * 0.48, y: my - mh * 0.3 },
+      { x: x + s * mw * 0.6, y: my + mh * 0.22 },
+      { x: x + s * mw * 0.44, y: my + mh * 0.66 },
+    ], r * 0.09, tooth, true);
+  }
 }
 
 function roundedBar(ctx, x, y, w, h, color) {
