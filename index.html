@@ -7,7 +7,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <link rel="manifest" href="./manifest.json" />
-  <title>가나다 디펜스 — 한글 마법 디펜스</title>
+  <title>가나다 디펜스 — Korean Letter Defense</title>
   <link rel="stylesheet" href="./css/style.css" />
 </head>
 <body>
@@ -45,10 +45,10 @@
 
     <!-- Top HUD -->
     <header id="hud">
-      <div class="stat"><span class="lbl" data-i18n="hud.wave">물결</span><span id="wave">1</span></div>
+      <div class="stat"><span class="lbl" data-i18n="hud.wave">Wave</span><span id="wave">1</span></div>
       <div class="stat"><span class="lbl gold"><svg class="ic"><use href="#ic-coin"/></svg></span><span id="gold">0</span></div>
-      <div class="stat"><span class="lbl" data-i18n="hud.score">점수</span><span id="score">0</span></div>
-      <div class="stat"><span class="lbl" data-i18n="hud.best">최고</span><span id="best">1</span></div>
+      <div class="stat"><span class="lbl" data-i18n="hud.score">Score</span><span id="score">0</span></div>
+      <div class="stat"><span class="lbl" data-i18n="hud.best">Best</span><span id="best">1</span></div>
       <div class="stat"><span class="lbl danger"><svg class="ic"><use href="#ic-goblin"/></svg></span><span id="enemiesLeft">0</span></div>
       <div class="hud-actions">
         <button id="pauseToggle" class="icon-btn" title="pause"><svg class="ic"><use id="pauseIcon" href="#ic-pause"/></svg></button>
@@ -61,12 +61,12 @@
     <!-- Gate + mana bars -->
     <div id="bars">
       <div class="bar gate">
-        <div class="bar-label"><svg class="ic sm"><use href="#ic-gate"/></svg> <span data-i18n="bar.gate">성문</span></div>
+        <div class="bar-label"><svg class="ic sm"><use href="#ic-gate"/></svg> <span data-i18n="bar.gate">Gate</span></div>
         <div class="bar-track"><div id="gateFill" class="bar-fill"></div></div>
         <div id="gateText" class="bar-val">100/100</div>
       </div>
       <div class="bar mana">
-        <div class="bar-label"><svg class="ic sm"><use href="#ic-brush"/></svg> <span data-i18n="bar.ink">먹</span></div>
+        <div class="bar-label"><svg class="ic sm"><use href="#ic-brush"/></svg> <span data-i18n="bar.ink">Ink</span></div>
         <div class="bar-track"><div id="manaFill" class="bar-fill ink"></div></div>
         <div id="manaText" class="bar-val">60/60</div>
       </div>
@@ -74,21 +74,21 @@
 
     <!-- Drawing controls -->
     <div id="drawctrl">
-      <button id="holdBtn" class="draw-btn"><svg class="ic"><use href="#ic-brush"/></svg> <span data-i18n="btn.hold">모아 그리기</span></button>
+      <button id="holdBtn" class="draw-btn"><svg class="ic"><use href="#ic-brush"/></svg> <span data-i18n="btn.hold">Hold Draw</span></button>
       <button id="clearBtn" class="draw-btn small" title="clear"><svg class="ic"><use href="#ic-clear"/></svg></button>
-      <button id="castBtn" class="draw-btn cast"><svg class="ic"><use href="#ic-cast"/></svg> <span data-i18n="btn.cast">시전</span></button>
+      <button id="castBtn" class="draw-btn cast"><svg class="ic"><use href="#ic-cast"/></svg> <span data-i18n="btn.cast">Cast</span></button>
     </div>
 
     <!-- Pause overlay -->
-    <div id="pauseOverlay"><div class="pause-card"><svg class="ic big"><use href="#ic-pause"/></svg><br><span data-i18n="pause.title">일시정지</span><br><span class="ptap" data-i18n="pause.tap">아무 곳이나 탭하면 계속</span></div></div>
+    <div id="pauseOverlay"><div class="pause-card"><svg class="ic big"><use href="#ic-pause"/></svg><br><span data-i18n="pause.title">Paused</span><br><span class="ptap" data-i18n="pause.tap">Tap anywhere to continue</span></div></div>
 
     <!-- Tutorial coach -->
     <div id="tutorial">
       <div class="tut-card">
-        <div class="tut-step" id="tutCount">연습 1/3</div>
+        <div class="tut-step" id="tutCount">Practice 1/3</div>
         <div class="tut-title" id="tutTitle"></div>
         <div class="tut-detail" id="tutDetail"></div>
-        <button id="tutSkip" class="tut-skip" data-i18n="btn.skip">건너뛰기</button>
+        <button id="tutSkip" class="tut-skip" data-i18n="btn.skip">Skip</button>
       </div>
     </div>
 
@@ -98,14 +98,14 @@
     <!-- Shop: upgrades + summon -->
     <aside id="shop">
       <div class="shop-head">
-        <h2 data-i18n="shop.title">상점</h2>
+        <h2 data-i18n="shop.title">Shop</h2>
         <button id="shopClose" class="icon-btn"><svg class="ic"><use href="#ic-clear"/></svg></button>
       </div>
       <div id="shopTabs">
-        <button class="shop-tab active" data-stab="upgrade" data-i18n="shop.tabUpgrade">강화</button>
-        <button class="shop-tab" data-stab="summon" data-i18n="shop.tabSummon">소환</button>
+        <button class="shop-tab active" data-stab="upgrade" data-i18n="shop.tabUpgrade">Upgrades</button>
+        <button class="shop-tab" data-stab="summon" data-i18n="shop.tabSummon">Summon</button>
       </div>
-      <p class="shop-hint" id="shopHint" data-i18n="shop.hint">처치한 도깨비의 골드로 영구 강화 (저장됨)</p>
+      <p class="shop-hint" id="shopHint" data-i18n="shop.hint">Spend dokkaebi gold on permanent upgrades (saved)</p>
       <div id="shopList"></div>
       <div id="summonBody"></div>
     </aside>
@@ -113,14 +113,14 @@
     <!-- Spellbook -->
     <aside id="spellbook">
       <div class="shop-head">
-        <h2><svg class="ic"><use href="#ic-book"/></svg> <span data-i18n="book.title">마법서</span></h2>
+        <h2><svg class="ic"><use href="#ic-book"/></svg> <span data-i18n="book.title">Spellbook</span></h2>
         <button id="bookClose" class="icon-btn"><svg class="ic"><use href="#ic-clear"/></svg></button>
       </div>
-      <p class="shop-hint" data-i18n="book.hint">자음을 그려 마법 시전 · 모음을 이어 그리면 조합(예: ㄱ+ㅏ=가)</p>
+      <p class="shop-hint" data-i18n="book.hint">Draw a consonant to cast · add a vowel to combine (e.g. ㄱ+ㅏ=가)</p>
       <div id="bookTabs">
-        <button class="book-tab active" data-tab="cons" data-i18n="book.tabCons">자음 (마법)</button>
-        <button class="book-tab" data-tab="vow" data-i18n="book.tabVow">모음 (조합)</button>
-        <button class="book-tab" data-tab="combo" data-i18n="book.tabCombo">조합 예시</button>
+        <button class="book-tab active" data-tab="cons" data-i18n="book.tabCons">Consonants</button>
+        <button class="book-tab" data-tab="vow" data-i18n="book.tabVow">Vowels</button>
+        <button class="book-tab" data-tab="combo" data-i18n="book.tabCombo">Combos</button>
       </div>
       <div id="bookBody"></div>
     </aside>
@@ -128,23 +128,23 @@
     <!-- Settings -->
     <aside id="settings">
       <div class="shop-head">
-        <h2><svg class="ic"><use href="#ic-gear"/></svg> <span data-i18n="set.title">설정</span></h2>
+        <h2><svg class="ic"><use href="#ic-gear"/></svg> <span data-i18n="set.title">Settings</span></h2>
         <button id="settingsClose" class="icon-btn"><svg class="ic"><use href="#ic-clear"/></svg></button>
       </div>
       <div class="set-group">
-        <div class="set-label"><svg class="ic sm"><use href="#ic-palette"/></svg> <span data-i18n="set.art">아트 스타일</span></div>
+        <div class="set-label"><svg class="ic sm"><use href="#ic-palette"/></svg> <span data-i18n="set.art">Art Style</span></div>
         <div id="themeRow" class="set-options"></div>
       </div>
       <div class="set-group">
-        <div class="set-label"><svg class="ic sm"><use href="#ic-globe"/></svg> <span data-i18n="set.lang">언어</span></div>
+        <div class="set-label"><svg class="ic sm"><use href="#ic-globe"/></svg> <span data-i18n="set.lang">Language</span></div>
         <div id="langRow" class="set-options"></div>
       </div>
       <div class="set-group">
-        <div class="set-label"><svg class="ic sm"><use href="#ic-sound"/></svg> <span data-i18n="set.sound">소리</span></div>
+        <div class="set-label"><svg class="ic sm"><use href="#ic-sound"/></svg> <span data-i18n="set.sound">Sound</span></div>
         <div id="soundRow" class="set-options"></div>
       </div>
       <div class="set-group">
-        <div class="set-label"><span data-i18n="set.vibration">진동</span></div>
+        <div class="set-label"><span data-i18n="set.vibration">Vibration</span></div>
         <div id="vibRow" class="set-options"></div>
       </div>
     </aside>
@@ -152,10 +152,10 @@
     <!-- Game over -->
     <div id="gameOver">
       <div class="go-card">
-        <h1 data-i18n="go.title">성문이 무너졌다…</h1>
+        <h1 data-i18n="go.title">The gate has fallen…</h1>
         <p id="goStats"></p>
-        <button id="restartBtn" class="big-btn" data-i18n="btn.restart">다시 도전</button>
-        <p class="go-tip" data-i18n="go.tip">강화는 그대로 유지됩니다. 골드를 모아 더 강해지세요!</p>
+        <button id="restartBtn" class="big-btn" data-i18n="btn.restart">Try Again</button>
+        <p class="go-tip" data-i18n="go.tip">Your upgrades are kept — gather gold and grow stronger!</p>
       </div>
     </div>
 
@@ -163,7 +163,7 @@
     <div id="title">
       <div class="title-card">
         <h1>가나다 디펜스</h1>
-        <p class="subtitle" data-i18n="title.sub">한글을 그려 도깨비를 물리쳐라</p>
+        <p class="subtitle" data-i18n="title.sub">Draw Korean letters to defeat the dokkaebi</p>
         <div class="how">
           <div class="how-row" data-i18n-html="how.1"></div>
           <div class="how-row" data-i18n-html="how.2"></div>
@@ -171,7 +171,7 @@
           <div class="how-row" data-i18n-html="how.4"></div>
           <div class="how-row" data-i18n-html="how.5"></div>
         </div>
-        <button id="startBtn" class="big-btn" data-i18n="btn.start">시작하기</button>
+        <button id="startBtn" class="big-btn" data-i18n="btn.start">Start</button>
       </div>
     </div>
   </div>

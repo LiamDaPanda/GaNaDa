@@ -3,7 +3,7 @@
 
 const STRINGS = {
   ko: {
-    'hud.wave': '물결', 'hud.score': '점수', 'hud.best': '최고',
+    'hud.wave': '물결', 'hud.score': '점수', 'hud.best': '최고', 'hud.combo': '콤보',
     'bar.gate': '성문', 'bar.ink': '먹',
     'btn.hold': '모아 그리기', 'btn.holding': '그리는 중…', 'btn.cast': '시전',
     'btn.start': '시작하기', 'btn.restart': '다시 도전', 'btn.skip': '건너뛰기',
@@ -44,7 +44,7 @@ const STRINGS = {
     'how.5': '<svg class="ic sm"><use href="#ic-swirl"/></svg> <b>자동포</b>가 알아서 싸우고, <svg class="ic sm"><use href="#ic-bag"/></svg> <b>상점</b>에서 골드로 강화!',
   },
   en: {
-    'hud.wave': 'Wave', 'hud.score': 'Score', 'hud.best': 'Best',
+    'hud.wave': 'Wave', 'hud.score': 'Score', 'hud.best': 'Best', 'hud.combo': 'Combo',
     'bar.gate': 'Gate', 'bar.ink': 'Ink',
     'btn.hold': 'Hold Draw', 'btn.holding': 'Drawing…', 'btn.cast': 'Cast',
     'btn.start': 'Start', 'btn.restart': 'Try Again', 'btn.skip': 'Skip',
@@ -86,7 +86,9 @@ const STRINGS = {
   },
 };
 
-let lang = 'ko';
+// Default the surrounding UI ("regular game stuff") to English. The Korean
+// letters you draw never change — only the interface follows this setting.
+let lang = 'en';
 try {
   const saved = localStorage.getItem('ganada_lang');
   if (saved && STRINGS[saved]) lang = saved;

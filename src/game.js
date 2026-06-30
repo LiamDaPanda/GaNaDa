@@ -1084,7 +1084,7 @@ export class Game {
     ctx.shadowBlur = 0;
     ctx.font = 'bold 13px system-ui, sans-serif';
     ctx.fillStyle = '#fff';
-    ctx.fillText('콤보', 0, -24);
+    ctx.fillText(t('hud.combo'), 0, -24);
     ctx.fillStyle = '#9aa7b8';
     ctx.fillText(`x${mult.toFixed(2)}`, 0, 18);
     // draining bar
