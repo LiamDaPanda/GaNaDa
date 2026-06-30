@@ -481,7 +481,7 @@ export function drawDokkaebi(ctx, e, time = 0) {
   const furBase = flash ? '#ffffff' : mix(body, '#efe6d2', 0.72);
   const furLt = flash ? '#ffffff' : mix(body, '#fbf5e8', 0.86);
   const furDk = flash ? '#e8e8ee' : mix(body, '#b8ab8f', 0.5);
-  const tw = r * 0.96, bwd = r * 0.74, ty = y - r * 1.02, byb = y + r * 0.98;
+  const tw = r * 0.96, ty = y - r * 1.02;
 
   // --- draped cloak / robe (behind the head, carries the type colour) ---
   {
@@ -524,16 +524,22 @@ export function drawDokkaebi(ctx, e, time = 0) {
     ctx.restore();
   }
 
-  // --- the fluffy near-square head ---
-  ctx.beginPath();
-  ctx.moveTo(x - tw, ty + r * 0.34);
-  ctx.quadraticCurveTo(x - tw, ty, x - tw * 0.52, ty - r * 0.02);
-  ctx.quadraticCurveTo(x, ty - r * 0.12, x + tw * 0.52, ty - r * 0.02);
-  ctx.quadraticCurveTo(x + tw, ty, x + tw, ty + r * 0.34);
-  ctx.quadraticCurveTo(x + bwd * 1.08, byb - r * 0.22, x + bwd, byb);
-  ctx.quadraticCurveTo(x, byb + r * 0.2, x - bwd, byb);
-  ctx.quadraticCurveTo(x - bwd * 1.08, byb - r * 0.22, x - tw, ty + r * 0.34);
-  ctx.closePath();
+  // --- the fluffy rounded head (round, but not a perfect sphere) ---
+  const head = [
+    { x: x, y: y - r * 1.04 },
+    { x: x + r * 0.6, y: y - r * 0.94 },
+    { x: x + r * 0.92, y: y - r * 0.5 },
+    { x: x + r * 0.98, y: y + r * 0.06 },
+    { x: x + r * 0.82, y: y + r * 0.62 },
+    { x: x + r * 0.46, y: y + r * 0.96 },
+    { x: x, y: y + r * 1.02 },
+    { x: x - r * 0.46, y: y + r * 0.96 },
+    { x: x - r * 0.82, y: y + r * 0.62 },
+    { x: x - r * 0.98, y: y + r * 0.06 },
+    { x: x - r * 0.92, y: y - r * 0.5 },
+    { x: x - r * 0.6, y: y - r * 0.94 },
+  ];
+  smoothBlob(ctx, head);
   if (flash) ctx.fillStyle = '#fff';
   else {
     const bg = ctx.createRadialGradient(x - r * 0.3, y - r * 0.5, r * 0.2, x, y, r * 1.25);
@@ -648,6 +654,19 @@ function roundedBar(ctx, x, y, w, h, color) {
   ctx.arcTo(x, y + h, x, y, r);
   ctx.arcTo(x, y, x + w, y, r);
   ctx.closePath(); ctx.fill();
+}
+
+// Draw a smooth closed curve through points (midpoint-quadratic).
+function smoothBlob(ctx, pts) {
+  const n = pts.length;
+  ctx.beginPath();
+  const m0 = { x: (pts[n - 1].x + pts[0].x) / 2, y: (pts[n - 1].y + pts[0].y) / 2 };
+  ctx.moveTo(m0.x, m0.y);
+  for (let i = 0; i < n; i++) {
+    const p = pts[i], q = pts[(i + 1) % n];
+    ctx.quadraticCurveTo(p.x, p.y, (p.x + q.x) / 2, (p.y + q.y) / 2);
+  }
+  ctx.closePath();
 }
 
 // Blend hex `a` toward hex `b` by t (0..1) → rgb() string.
