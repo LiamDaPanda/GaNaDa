@@ -481,7 +481,7 @@ export function drawDokkaebi(ctx, e, time = 0) {
   const furBase = flash ? '#ffffff' : mix(body, '#efe6d2', 0.72);
   const furLt = flash ? '#ffffff' : mix(body, '#fbf5e8', 0.86);
   const furDk = flash ? '#e8e8ee' : mix(body, '#b8ab8f', 0.5);
-  const tw = r * 0.96, ty = y - r * 1.02;
+  const ty = y - r * 1.02;
 
   // --- draped cloak / robe (behind the head, carries the type colour) ---
   {
@@ -500,16 +500,7 @@ export function drawDokkaebi(ctx, e, time = 0) {
     ctx.lineWidth = Math.max(1, r * 0.05); ctx.strokeStyle = 'rgba(8,6,12,0.5)'; ctx.stroke();
   }
 
-  // --- soft fluffy fur puffs around the silhouette (behind the head fill) ---
   const fr = rng(seed + 5);
-  for (let i = 0; i < 22; i++) {
-    const t = i / 21; const a = Math.PI * 0.8 + t * Math.PI * 1.4;
-    const bxp = x + Math.cos(a) * tw * 0.98;
-    const byp = (y - r * 0.03) + Math.sin(a) * r * 0.95;
-    const pr = r * (0.12 + fr() * 0.08);
-    ctx.fillStyle = i % 3 ? furBase : furLt;
-    inkBlob(ctx, bxp + Math.cos(a) * pr * 0.4, byp + Math.sin(a) * pr * 0.4, pr, seed + i * 7, 0.42, 7); ctx.fill();
-  }
 
   // --- short curved amber horns poking through the top fluff ---
   for (const s of [-1, 1]) {
@@ -554,6 +545,23 @@ export function drawDokkaebi(ctx, e, time = 0) {
   ctx.beginPath(); ctx.arc(x, y - r * 0.05, r * 0.82, Math.PI * 0.92, Math.PI * 1.4); ctx.stroke();
   ctx.restore();
 
+  // --- soft fur: a fluffy ruff along the bottom + a few stray crown hairs ---
+  for (let i = 0; i <= 9; i++) {
+    const a = Math.PI * 0.3 + (i / 9) * Math.PI * 0.4; // lower arc (chin)
+    const bxp = x + Math.cos(a) * r * 0.78;
+    const byp = y + Math.sin(a) * r * 0.92;
+    const pr = r * (0.16 + fr() * 0.07);
+    ctx.fillStyle = i % 2 ? furLt : furBase;
+    inkBlob(ctx, bxp, byp, pr, seed + i * 9, 0.4, 8); ctx.fill();
+  }
+  ctx.lineCap = 'round';
+  for (let i = 0; i < 7; i++) {
+    const a = -Math.PI * 0.82 + (i / 6) * Math.PI * 0.64;
+    const bxp = x + Math.cos(a) * r * 0.84, byp = y + Math.sin(a) * r * 0.94;
+    const len = r * (0.08 + fr() * 0.12);
+    brushStroke(ctx, [{ x: bxp, y: byp }, { x: bxp + Math.cos(a) * len, y: byp + Math.sin(a) * len }], r * 0.035, furLt, true);
+  }
+
   // --- boss regalia: red aura + golden crown ---
   if (boss) {
     ctx.save();
@@ -570,17 +578,32 @@ export function drawDokkaebi(ctx, e, time = 0) {
 
   // --- furry hands cupping the cheeks (the signature ORV pose) ---
   for (const s of [-1, 1]) {
-    const px = x + s * r * 0.86, py = y + r * 0.5;
-    ctx.fillStyle = furDk; inkBlob(ctx, px, py, r * 0.46, seed + (s > 0 ? 40 : 80), 0.26, 11); ctx.fill();
-    ctx.fillStyle = furBase; inkBlob(ctx, px - s * r * 0.04, py - r * 0.02, r * 0.4, seed + (s > 0 ? 41 : 81), 0.22, 11); ctx.fill();
-    // fingers fanning up the cheek toward the eye
-    for (let f = 0; f < 4; f++) {
-      const fxp = px - s * r * 0.22 + s * f * r * 0.16;
-      const fyp = py - r * 0.26 - (3 - f) * r * 0.03;
-      ctx.fillStyle = f % 2 ? furLt : furBase;
-      ctx.beginPath(); ctx.ellipse(fxp, fyp, r * 0.092, r * 0.2, -s * 0.16, 0, Math.PI * 2); ctx.fill();
-      ctx.lineWidth = 1; ctx.strokeStyle = 'rgba(30,22,14,0.25)'; ctx.stroke();
+    ctx.save();
+    ctx.translate(x + s * r * 0.82, y + r * 0.36);
+    ctx.rotate(s * 0.16);
+    if (s > 0) ctx.scale(-1, 1); // draw one paw, mirror for the other side
+    const pw = r * 0.44, ph = r * 0.58;
+    // rounded mitten: rounded palm with three soft finger scallops on top
+    ctx.beginPath();
+    ctx.moveTo(-pw, ph * 0.22);
+    ctx.quadraticCurveTo(-pw * 1.04, -ph * 0.5, -pw * 0.55, -ph * 0.84);
+    ctx.quadraticCurveTo(-pw * 0.36, -ph * 1.04, -pw * 0.14, -ph * 0.82);
+    ctx.quadraticCurveTo(0, -ph * 1.05, pw * 0.22, -ph * 0.82);
+    ctx.quadraticCurveTo(pw * 0.42, -ph * 1.0, pw * 0.58, -ph * 0.72);
+    ctx.quadraticCurveTo(pw * 1.04, -ph * 0.4, pw, ph * 0.2);
+    ctx.quadraticCurveTo(pw * 0.96, ph * 0.96, 0, ph);
+    ctx.quadraticCurveTo(-pw * 0.96, ph * 0.96, -pw, ph * 0.22);
+    ctx.closePath();
+    const pg = ctx.createRadialGradient(-pw * 0.3, -ph * 0.4, pw * 0.2, 0, 0, ph * 1.2);
+    pg.addColorStop(0, furLt); pg.addColorStop(0.7, furBase); pg.addColorStop(1, furDk);
+    ctx.fillStyle = flash ? '#fff' : pg; ctx.fill();
+    ctx.lineWidth = Math.max(1, r * 0.04); ctx.strokeStyle = 'rgba(22,15,10,0.32)'; ctx.stroke();
+    // two soft finger creases
+    ctx.strokeStyle = 'rgba(40,28,18,0.26)'; ctx.lineWidth = Math.max(1, r * 0.028); ctx.lineCap = 'round';
+    for (const cx2 of [-pw * 0.2, pw * 0.22]) {
+      ctx.beginPath(); ctx.moveTo(cx2, -ph * 0.74); ctx.lineTo(cx2 * 0.7, -ph * 0.1); ctx.stroke();
     }
+    ctx.restore();
   }
 
   // --- big slanted red eyes ---
