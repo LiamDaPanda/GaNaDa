@@ -61,12 +61,13 @@ export const THEMES = {
     ground: ['rgba(40,32,54,0.96)', '#0d0a16'],
     mist: '#cdd7ee',
     taegeuk: ['#9c3b34', '#345877'],
-    glow: 0.4, additive: false,
+    glow: 0.55, additive: false,
     stroke: {
       bleed: 'rgba(225,216,193,0.18)', bleedShadow: 'rgba(232,224,200,0.5)', bleedBlur: 6,
       body: 'rgba(238,231,210,0.92)', core: 'rgba(150,140,118,0.5)', head: '#efe7d2',
     },
-    fx: (c) => c,
+    // pull element colours toward ink — muted, black-and-white-ish, some hue left
+    fx: (c) => adjust(c, -0.3, 0),
     ui: { ink: '#9aa7b8', gold: '#c79a3e', panel: 'rgba(20,17,28,0.93)', line: 'rgba(220,210,188,0.14)', text: '#f3eefc' },
   },
 

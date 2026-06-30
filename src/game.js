@@ -11,6 +11,7 @@ import { UPGRADES } from './upgrades.js';
 import { getTheme } from './themes.js';
 import { t } from './i18n.js';
 import { Ring, Flash, Bolt, Beam, Shards, Streak, Wisp, Smoke, Crack, Crystal, Gas, Rays } from './effects.js';
+import { InkWash, InkSplat, Enso, BrushSlash, InkGlyph } from './effects.js';
 import * as Prog from './progression.js';
 
 const SAVE_KEY = 'ganada_save_v1';
@@ -324,7 +325,8 @@ export class Game {
 
     if (atk.heal && atk.kind !== 'nova') this.healGate(atk.heal);
     if (atk.composed) {
-      this.texts.push(new FloatingText(this.W / 2, this.H * 0.33, atk.name, atk.glow, 24));
+      // stamp the syllable you drew as a big brush-ink glyph
+      this.effects.push(new InkGlyph(this.W / 2, this.H * 0.32, atk.name, atk.glow, atk.kind === 'ultimate' ? 108 : 84));
     }
     this.ui.flashRune(baseKey || (atk.jamos ? atk.jamos[0] : atk));
     return true;
@@ -401,8 +403,9 @@ export class Game {
       this.spawnBurst(e.x, e.y, atk.color, 12);
     }
     const by = this.laneY - 20;
-    this.effects.push(new Beam(this.gateX, this.W, by, 26, atk.color, 0.45));
-    this.effects.push(new Beam(this.gateX, this.W, by, 9, atk.glow, 0.45));
+    // a single sweeping calligraphic cut across the lane
+    this.effects.push(new BrushSlash(this.gateX, by + 10, this.W, by - 14, 30, atk.color));
+    this.effects.push(new Beam(this.gateX, this.W, by, 14, atk.glow, 0.4));
   }
 
   // 받침 fusion — a screen-wide ultimate carrying both consonants' effects.
@@ -421,13 +424,14 @@ export class Game {
         this.laneY - 20 + (Math.random() * 120 - 60), i % 2 ? atk.glow : atk.color,
         { speed: 70, life: 0.6, size: 4, gravity: 0 }));
     }
-    // overlapping shockwaves from the gate + a strong screen flash
+    // overlapping shockwaves + a giant brushed enso sweeping the field
     const cy = this.laneY - 20;
     for (let i = 0; i < 3; i++) {
       this.effects.push(new Ring(this.gateX, cy, 10, this.W * (0.7 + i * 0.25), 0.7 + i * 0.15, i % 2 ? atk.glow : atk.color, 6 - i));
     }
-    this.effects.push(new Flash(this.gateX, cy, 120, 0.5, atk.glow));
-    this.flashScreen(atk.color, 0.3);
+    this.effects.push(new Enso(this.W * 0.54, this.laneY - 40, this.W * 0.42, atk.glow, 0.85));
+    this.effects.push(new InkWash(this.gateX, cy, 160, atk.glow));
+    this.flashScreen(atk.color, 0.26);
   }
 
   frontmost() {
@@ -480,12 +484,14 @@ export class Game {
     this.spawnBurst(x, y, atk.color, atk.kind === 'nova' ? 60 : 30);
     // animated impact: flash core + expanding shockwave ring + element flavour
     const R = Math.max(40, atk.radius || 70);
-    this.effects.push(new Flash(x, y, R * 0.7, 0.3, atk.glow));
+    // calligraphic ink hit — a luminous wash that blooms and a fling of droplets
+    this.effects.push(new InkWash(x, y, R * 1.05, atk.glow));
+    this.effects.push(new InkSplat(x, y, R * (atk.kind === 'nova' ? 1.1 : 0.85), atk.color));
     this.effects.push(new Ring(x, y, 8, R * (atk.kind === 'nova' ? 1.4 : 1.1), atk.kind === 'nova' ? 0.6 : 0.45, atk.color, 6));
     this.elementBurst(x, y, atk, R);
     if (atk.kind === 'nova') {
-      this.effects.push(new Ring(x, y, 8, R * 1.7, 0.8, atk.glow, 3));
-      this.flashScreen(atk.glow, 0.18);
+      this.effects.push(new Enso(x, y, R * 1.25, atk.glow, 0.8));
+      this.flashScreen(atk.glow, 0.16);
     }
     if (atk.element === 'lightning') {
       for (let i = 0; i < 3; i++) {
