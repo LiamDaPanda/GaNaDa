@@ -482,8 +482,6 @@ export function drawDokkaebi(ctx, e, time = 0) {
   const furLt = flash ? '#ffffff' : mix(body, '#fbf5e8', 0.8);
   const furDk = flash ? '#e8e8ee' : mix(body, '#a89a7e', 0.45);
 
-  const fr = rng(seed + 5);
-
   // --- two small solid horns (bases tucked behind the head) ---
   for (const s of [-1, 1]) {
     ctx.save();
@@ -525,16 +523,6 @@ export function drawDokkaebi(ctx, e, time = 0) {
   ctx.beginPath(); ctx.arc(x, y - r * 0.05, r * 0.82, Math.PI * 0.92, Math.PI * 1.4); ctx.stroke();
   ctx.restore();
 
-  // --- soft fluffy ruff along the bottom (chin) ---
-  for (let i = 0; i <= 9; i++) {
-    const a = Math.PI * 0.3 + (i / 9) * Math.PI * 0.4; // lower arc (chin)
-    const bxp = x + Math.cos(a) * r * 0.78;
-    const byp = y + Math.sin(a) * r * 0.92;
-    const pr = r * (0.16 + fr() * 0.07);
-    ctx.fillStyle = i % 2 ? furLt : furBase;
-    inkBlob(ctx, bxp, byp, pr, seed + i * 9, 0.4, 8); ctx.fill();
-  }
-
   // --- boss regalia: a red aura ring ---
   if (boss) {
     ctx.save();
@@ -548,8 +536,6 @@ export function drawDokkaebi(ctx, e, time = 0) {
   const eyeCol = flash ? '#3a1410' : (boss ? '#ff7a36' : '#e23f29');
   for (const s of [-1, 1]) {
     const ex = x + s * r * 0.33, ey = y - r * 0.06;
-    // fur brow drooping over the eye
-    brushStroke(ctx, [{ x: ex - s * r * 0.24, y: ey - r * 0.13 }, { x: ex, y: ey - r * 0.2 }, { x: ex + s * r * 0.2, y: ey - r * 0.12 }], r * 0.11, furBase, true);
     ctx.save();
     ctx.translate(ex, ey); ctx.rotate(s * 0.3);
     ctx.fillStyle = '#180c08';
