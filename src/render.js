@@ -485,9 +485,9 @@ export function drawDokkaebi(ctx, e, time = 0) {
   // --- two small solid horns (bases tucked behind the head) ---
   for (const s of [-1, 1]) {
     ctx.save();
-    ctx.translate(x + s * r * 0.44, y - r * 0.64);
+    ctx.translate(x + s * r * 0.46, y - r * 0.66);
     ctx.scale(s, 1);
-    const hw = r * 0.17, hh = r * 0.56;
+    const hw = r * 0.26, hh = r * 0.92;
     ctx.beginPath();
     ctx.moveTo(-hw * 0.5, hh * 0.12);
     ctx.quadraticCurveTo(-hw * 0.2, -hh * 0.5, hw * 0.24, -hh * 0.96);
