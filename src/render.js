@@ -3,6 +3,7 @@
 // palette and a `style` that picks the background decorations.
 
 import { getTheme } from './themes.js';
+import { skyMotifs, cornerBranch } from './art.js';
 
 function rng(seed) {
   let s = (seed >>> 0) || 1;
@@ -103,6 +104,9 @@ export function drawBackground(ctx, W, H, laneY, wave, time = 0) {
 
   drawMoon(ctx, W, H, time, T);
 
+  // calligraphic sky art: a faint enso, drifting clouds and a gliding crane
+  skyMotifs(ctx, W, H, laneY, time, T);
+
   if (T.style === 'neon') neonMidground(ctx, W, H, laneY, time, T);
   else if (T.style === 'stone') stoneMidground(ctx, W, laneY, time, T);
   else sumiMidground(ctx, W, laneY, time, T);
@@ -156,6 +160,9 @@ export function drawBackground(ctx, W, H, laneY, wave, time = 0) {
     for (let y = 0; y < H; y += 3) ctx.fillRect(0, y, W, 1);
     ctx.restore();
   }
+
+  // overhanging plum branch (매화) framing the top corner
+  cornerBranch(ctx, W, time, T);
 
   // vignette
   const vig = ctx.createRadialGradient(W / 2, H * 0.5, H * 0.3, W / 2, H * 0.5, H * 0.8);

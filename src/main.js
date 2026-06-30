@@ -3,9 +3,11 @@ import { Game } from './game.js';
 import { UI } from './ui.js';
 import { Audio } from './audio.js';
 import { applyThemeCSS } from './themes.js';
+import { paintCrest } from './art.js';
 
 function boot() {
   applyThemeCSS();
+  paintCrest();
   const canvas = document.getElementById('game');
   const ui = new UI();
   ui.applyI18n();

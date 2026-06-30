@@ -460,8 +460,18 @@ html, body {
 .go-card p, .go-tip { font-size: 14px; opacity: 0.85; margin: 8px 0; }
 .go-tip { font-size: 12px; opacity: 0.6; }
 
+.crest {
+  display: block;
+  width: 220px;
+  height: auto;
+  margin: 2px auto 4px;
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.45));
+}
+.crest.sm { width: 150px; margin: 0 auto 6px; }
+
 .title-card h1 {
   font-size: 34px;
+  letter-spacing: 0.06em;
   background: linear-gradient(90deg, #b5532f, var(--gold), #6f8aa0, #8a6f99);
   -webkit-background-clip: text;
   background-clip: text;

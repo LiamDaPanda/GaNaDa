@@ -8,6 +8,7 @@ import { t, getLang, setLang, localName } from './i18n.js';
 import { THEMES, THEME_ORDER, getThemeId, setTheme } from './themes.js';
 import { Audio } from './audio.js';
 import * as Prog from './progression.js';
+import { paintCrest, paintGameOverSeal } from './art.js';
 
 export class UI {
   constructor() {
@@ -122,6 +123,7 @@ export class UI {
         setTheme(id);
         Audio.buy();
         this.buildSettings();
+        paintCrest();
       });
       themeRow.appendChild(b);
     }
@@ -336,6 +338,7 @@ export class UI {
     this.el.goStats.innerHTML = t('go.stats', {
       wave: s.wave, score: s.score, kills: s.kills, combo: bestCombo, best: best || s.wave,
     });
+    paintGameOverSeal();
     this.el.gameOver.classList.add('show');
   }
 
