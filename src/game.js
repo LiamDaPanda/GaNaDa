@@ -48,6 +48,7 @@ export class Game {
     this.gateGlow = 0; // cast-charge brightening at the gate
 
     this.stroke = [];        // current drawing points (screen space)
+    this.heldStrokes = [];   // strokes drawn so far this hold-mode syllable (kept on screen)
     this.drawing = false;
     this.lastRecognition = null;
 
@@ -111,6 +112,7 @@ export class Game {
   // ✕ — discard the syllable currently being drawn.
   clearCompose() {
     this.compose = { jamos: [], timer: 0, x: this.W / 2, y: this.H * 0.2 };
+    this.heldStrokes = [];
     this.holdMode = false;
     if (this.ui) this.ui.setHold(false);
     Audio.miss();
@@ -667,6 +669,8 @@ export class Game {
     if (this.stroke.length < 4) { this.stroke = []; return; }
     const last = this.stroke[this.stroke.length - 1];
     if (!this.addStroke(this.stroke, last)) this.missStroke(last);
+    // in hold mode, keep each accepted stroke on screen while composing
+    else if (this.holdMode) this.heldStrokes.push(this.stroke);
     this.stroke = [];
   }
 
@@ -853,6 +857,7 @@ export class Game {
   beginHold() {
     this.holdMode = true;
     this.compose = { jamos: [], timer: 0, x: this.W / 2, y: this.H * 0.2 };
+    this.heldStrokes = [];
     Audio.compose(0);
     if (this.ui) this.ui.setHold(true);
   }
@@ -861,6 +866,7 @@ export class Game {
   castComposed() {
     const had = this.compose.jamos.length;
     this.commitSyllable();
+    this.heldStrokes = [];
     this.holdMode = false;
     if (this.ui) this.ui.setHold(false);
     if (!had) Audio.miss();
@@ -890,6 +896,7 @@ export class Game {
     this.state.mana = this.state.manaMax;
     this.state.gateHp = this.state.gateMax;
     this.compose = { jamos: [], timer: 0, x: 0, y: 0 };
+    this.heldStrokes = [];
     this.holdMode = false;
     this.combo = 0;
     this.comboTimer = 0;
@@ -1061,6 +1068,8 @@ export class Game {
     }
     ctx.globalAlpha = 1;
 
+    // strokes kept on screen while composing in hold mode
+    if (this.heldStrokes.length) this.drawHeld(ctx);
     // current drawing stroke
     if (this.stroke.length > 1) this.drawStroke(ctx);
 
@@ -1170,6 +1179,20 @@ export class Game {
 
   // The player's drawn ink — styled by the active theme (bone-white sumi,
   // neon cyan glow, or warm bronze, etc.).
+  // The strokes already drawn this hold-mode syllable, kept softly on screen.
+  drawHeld(ctx) {
+    const s = getTheme().stroke;
+    ctx.save();
+    ctx.globalAlpha = 0.5;
+    for (const st of this.heldStrokes) {
+      if (st.length < 2) continue;
+      brushStroke(ctx, st, 11, s.bleed, true);
+      brushStroke(ctx, st, 8, s.body, true);
+      brushStroke(ctx, st, 4, s.core, true);
+    }
+    ctx.restore();
+  }
+
   drawStroke(ctx) {
     const s = getTheme().stroke;
     ctx.save();
