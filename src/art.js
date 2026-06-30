@@ -328,7 +328,7 @@ export function drawCrest(ctx, W, H, T) {
   plumBlossom(ctx, twig[3].x, twig[3].y, R * 0.13, 5, petal);
   plumBlossom(ctx, twig[6].x, twig[6].y, R * 0.1, 9, petal);
   // seal stamp resting at lower-right
-  sealStamp(ctx, cx + R * 0.66, cy + R * 0.52, R * 0.42, { seed: 5, red: neon ? '#ff3c8f' : '#b23a2e' });
+  sealStamp(ctx, cx + R * 0.66, cy + R * 0.52, R * 0.42, { seed: 5, red: neon ? '#ff3c8f' : '#b0476e' });
 }
 
 // Sky decorations layered into the live background, by theme. Cheap enough to
@@ -380,7 +380,7 @@ export function paintGameOverSeal() {
   ctx.clearRect(0, 0, c.width, c.height);
   const cx = c.width / 2, cy = c.height / 2;
   enso(ctx, cx, cy, 48, { color: '#7a3a32', seed: 9, gap: 1.7, weight: 0.13, alpha: 0.8 });
-  sealStamp(ctx, cx, cy, 54, { seed: 13, red: T.style === 'neon' ? '#ff3c8f' : '#9c3b34' });
+  sealStamp(ctx, cx, cy, 54, { seed: 13, red: T.style === 'neon' ? '#ff3c8f' : '#a04068' });
   inkSplat(ctx, cx, cy, 62, 17, '#7a3a32', 0.6);
 }
 

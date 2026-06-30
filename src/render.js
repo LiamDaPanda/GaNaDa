@@ -520,8 +520,8 @@ export function drawDokkaebi(ctx, e, time = 0) {
       brushStroke(ctx, rim, r * 0.1, '#1c1610', true);
     }
 
-    // --- big slanted red eyes ---
-    const eyeCol = flash ? '#3a1410' : '#e23f29';
+    // --- big slanted glowing eyes (plum) ---
+    const eyeCol = flash ? '#3a1018' : '#d24f7e';
     for (const s of [-1, 1]) {
       const ex = x + s * r * 0.33, ey = y - r * 0.06;
       ctx.save();
@@ -600,7 +600,7 @@ export function drawDokkaebi(ctx, e, time = 0) {
   const bw = r * 1.9, bx = x - bw / 2, by = y - r - (boss ? 46 : 20);
   roundedBar(ctx, bx - 1.5, by - 1.5, bw + 3, 6, 'rgba(0,0,0,0.6)');
   const frac = Math.max(0, e.hp / e.maxHp);
-  roundedBar(ctx, bx, by, bw * frac, 4, `hsl(${frac * 120}, 42%, 46%)`);
+  roundedBar(ctx, bx, by, bw * frac, 4, `hsl(342, ${24 + frac * 38}%, ${34 + frac * 16}%)`);
   if (boss) {
     ctx.fillStyle = T.ui.gold;
     ctx.font = "bold 13px 'Gowun Batang', 'Apple SD Gothic Neo', serif";
@@ -616,7 +616,7 @@ function drawBossMask(ctx, x, y, r, o) {
   const { flash, G, T } = o;
   const ink = flash ? '#ffffff' : '#161109';
   const tooth = flash ? '#ffffff' : '#f1ead6';
-  const eyeCol = flash ? '#3a1410' : '#ff5326';
+  const eyeCol = flash ? '#3a1018' : '#e0567f';
 
   // red aura behind the mask
   ctx.save();
