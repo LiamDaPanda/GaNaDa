@@ -8,6 +8,7 @@ import { t, getLang, setLang, localName } from './i18n.js';
 import { Audio } from './audio.js';
 import * as Prog from './progression.js';
 import { paintGameOverSeal } from './art.js';
+import { REGIONS } from './regions.js';
 
 export class UI {
   constructor() {
@@ -248,10 +249,50 @@ export class UI {
     this._rcTimer = setTimeout(() => el.classList.remove('show'), 2400);
   }
 
-  // Region-cleared celebration (reuses the banner with a reward line).
-  regionClear(name, gold, letter) {
-    const sub = letter ? t('region.rewardLetter', { g: gold, j: letter }) : t('region.reward', { g: gold });
-    this.banner(t('region.clear', { name }), sub);
+  // Cinematic boss intro: darken, name the boss, flash a warning.
+  bossIntro(name, accent) {
+    const el = document.getElementById('bossIntro');
+    if (!el) return;
+    el.style.setProperty('--bi-accent', accent || '#c23a2e');
+    el.querySelector('.bi-warn').textContent = t('banner.boss');
+    el.querySelector('.bi-name').textContent = name;
+    el.classList.remove('show'); void el.offsetWidth; // restart animation
+    el.classList.add('show');
+    clearTimeout(this._biTimer);
+    this._biTimer = setTimeout(() => el.classList.remove('show'), 1800);
+  }
+
+  // Region-clear "loot" card with a journey map + rewards; taps (or a timer)
+  // call `onContinue` to march into the next region.
+  regionClearCard(payload, onContinue) {
+    const el = document.getElementById('regionClearCard');
+    if (!el) { setTimeout(onContinue, 2200); return; }
+    const { pos, gold, letter, accent } = payload;
+    el.style.setProperty('--rcc-accent', accent || '#c79a3e');
+    el.querySelector('.rcc-title').textContent = t('region.clearedTitle');
+    // journey map: nodes for each region, current = just-cleared
+    let map = '';
+    REGIONS.forEach((r, i) => {
+      const cls = i < pos ? 'done' : (i === pos ? 'cur' : 'next');
+      map += `<span class="rcc-node ${cls}" style="--n:${r.accent}"></span>`;
+      if (i < REGIONS.length - 1) map += `<span class="rcc-link ${i < pos ? 'done' : ''}"></span>`;
+    });
+    el.querySelector('.rcc-map').innerHTML = map;
+    let rw = `<div class="rw"><svg class="ic"><use href="#ic-coin"/></svg> +${gold}</div>`;
+    if (letter) rw += `<div class="rw new"><span class="rw-jamo">${letter}</span> ${t('region.newLetter')}</div>`;
+    el.querySelector('.rcc-rewards').innerHTML = rw;
+    el.querySelector('.rcc-cont').textContent = t('region.tapContinue');
+    el.classList.add('show');
+    let done = false;
+    const go = () => {
+      if (done) return; done = true;
+      el.classList.remove('show');
+      el.removeEventListener('click', go);
+      clearTimeout(tmr);
+      if (onContinue) onContinue();
+    };
+    el.addEventListener('click', go);
+    const tmr = setTimeout(go, 4600);
   }
 
   setRegionTint(accent) {

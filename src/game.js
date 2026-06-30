@@ -10,7 +10,7 @@ import { drawDokkaebi, drawGate, drawBackground, brushStroke, inkBlob } from './
 import { UPGRADES } from './upgrades.js';
 import { getTheme } from './themes.js';
 import { t, getLang } from './i18n.js';
-import { regionInfo, regionName, bossName } from './regions.js';
+import { regionInfo, regionName, bossName, REGIONS } from './regions.js';
 import { Ring, Flash, Bolt, Beam, Shards, Streak, Wisp, Smoke, Crack, Crystal, Gas, Rays } from './effects.js';
 import { InkWash, InkSplat, Enso, BrushSlash, InkGlyph, Sparkle } from './effects.js';
 import * as Prog from './progression.js';
@@ -253,6 +253,7 @@ export class Game {
     const info = regionInfo(w);
     const isBoss = info.isBoss;
     const en = getLang() === 'en';
+    this.regionAccent = info.region.accent;
     if (this.ui) this.ui.setRegionTint(info.region.accent);
     this.spawnQueue = [];
     const count = isBoss ? 6 + Math.floor(w / 5) : 5 + Math.floor(w * 1.3);
@@ -290,7 +291,14 @@ export class Game {
       const scale = s.type === 'boss' ? 1 : 0.85 + Math.random() * 0.4;
       const y = this.laneY - 10 + (Math.random() * 40 - 20);
       const enemy = new Enemy(s.type, this.W + 40, y, scale, s.hpMul);
-      if (s.name) enemy.bossName = s.name;
+      enemy.regionTint = this.regionAccent;
+      if (s.name) {
+        enemy.bossName = s.name;
+        // cinematic boss intro
+        if (this.ui) this.ui.bossIntro(s.name, this.regionAccent);
+        this.shake = Math.min(26, this.shake + 14);
+        Audio.wave();
+      }
       this.enemies.push(enemy);
       this.spawnIndex++;
     }
@@ -298,28 +306,31 @@ export class Game {
       // wave cleared
       this.waveActive = false;
       const cleared = regionInfo(this.state.wave);
-      const en = getLang() === 'en';
       this.state.wave++;
       this.bestWave = Math.max(this.bestWave || 1, this.state.wave);
       this.state.gold += 10 + this.state.wave * 2;
+      this.gainXp(25 + this.state.wave * 12);
       if (cleared.isBoss) {
-        // region cleared — RPG reward + celebration
+        // region cleared — RPG reward + a loot card with a journey map
         const bonus = 40 + this.state.wave * 6;
         this.state.gold += bonus;
         this.gainXp(60 + this.state.wave * 10);
         const got = Prog.grantUnlock();
-        if (this.ui) this.ui.regionClear(regionName(cleared, en), bonus, got ? jamoChar(got) : null);
         if (got && this.ui) this.ui.buildSpellbook();
         for (let i = 0; i < 6; i++) {
           this.effects.push(new Sparkle(this.W * (0.18 + Math.random() * 0.64), this.H * (0.22 + Math.random() * 0.26), 36 + Math.random() * 44, '#ffe6a0', 0.9));
         }
         this.shake = Math.min(20, this.shake + 10);
+        this.save();
+        const payload = { pos: cleared.idx % REGIONS.length, loop: cleared.loop, gold: bonus, letter: got ? jamoChar(got) : null, accent: cleared.region.accent };
+        const next = () => { if (!this.gameOver && !this.tutorial.active) this.startWave(); };
+        if (this.ui) this.ui.regionClearCard(payload, next);
+        else setTimeout(next, 2800);
       } else {
         this.texts.push(new FloatingText(this.W / 2, this.H * 0.4, t('toast.waveClear'), '#c9a44e', 26));
+        this.save();
+        setTimeout(() => { if (!this.gameOver && !this.tutorial.active) this.startWave(); }, 1600);
       }
-      this.gainXp(25 + this.state.wave * 12);
-      this.save();
-      setTimeout(() => { if (!this.gameOver && !this.tutorial.active) this.startWave(); }, cleared.isBoss ? 2800 : 1600);
     }
   }
 

@@ -549,6 +549,8 @@ export function drawDokkaebi(ctx, e, time = 0) {
   let body = e.def.color;
   if (frozen) body = '#6fb6d6';
   body = T.fx(body);
+  // each region tints its dokkaebi toward the region's accent colour
+  if (e.regionTint && !frozen && !flash) body = mix(body, e.regionTint, 0.3);
 
   // ORV-style 도깨비: just a fluffy round head with short horns, big red
   // eyes and a fanged grin — no body.
@@ -831,13 +833,14 @@ function smoothBlob(ctx, pts) {
   ctx.closePath();
 }
 
-// Blend hex `a` toward hex `b` by t (0..1) → rgb() string.
+// Blend hex `a` toward hex `b` by t (0..1) → hex string (so it can chain).
 function mix(a, b, t) {
   if (!a || a[0] !== '#' || a.length < 7) return a;
   const bb = (b && b[0] === '#' && b.length >= 7) ? b : '#000000';
   const pa = parseInt(a.slice(1), 16), pb = parseInt(bb.slice(1), 16);
-  const c = (sa, sb) => Math.round(sa * (1 - t) + sb * t);
-  return `rgb(${c((pa >> 16) & 255, (pb >> 16) & 255)},${c((pa >> 8) & 255, (pb >> 8) & 255)},${c(pa & 255, pb & 255)})`;
+  const c = (sa, sb) => Math.max(0, Math.min(255, Math.round(sa * (1 - t) + sb * t)));
+  const r = c((pa >> 16) & 255, (pb >> 16) & 255), g = c((pa >> 8) & 255, (pb >> 8) & 255), bl = c(pa & 255, pb & 255);
+  return `#${((1 << 24) + (r << 16) + (g << 8) + bl).toString(16).slice(1)}`;
 }
 
 function shift(hex, amt) {
