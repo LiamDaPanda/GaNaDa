@@ -20,6 +20,40 @@ const SAVE_KEY = 'ganada_save_v1';
 const F_BODY = "'Gowun Batang', 'Apple SD Gothic Neo', 'Malgun Gothic', serif";
 const F_BRUSH = "'Nanum Brush Script', cursive";
 
+// Every vowel id (simple + compound) — used to route a jamo to the right
+// recognizer slot when refining a multi-stroke letter.
+const VOWEL_IDS = new Set([
+  'a', 'eo', 'o', 'u', 'eu', 'i', 'ya', 'yeo', 'yo', 'yu',
+  'ae', 'yae', 'e', 'ye', 'wa', 'wae', 'oe', 'wo', 'we', 'wi', 'ui',
+]);
+function jamoCategory(id) { return VOWEL_IDS.has(id) ? 'vowel' : 'consonant'; }
+
+// Which letters a follow-up stroke may extend the previous jamo into. This
+// whitelists the real multi-stroke letters (bar→ㅏ, line→ㅗ, ㄱ→ㅋ, …) so a
+// continuation stroke can refine the previous jamo, while keeping genuinely
+// separate jamo from ever merging.
+const EXTEND = {
+  i: ['a', 'eo', 'ya', 'yeo'],   // ㅣ + tick(s)
+  eu: ['o', 'u', 'yo', 'yu'],    // ㅡ + tick(s)
+  a: ['ya'], eo: ['yeo'], o: ['yo'], u: ['yu'], // + a second tick
+  giyeok: ['kieuk'],  // ㄱ + bar = ㅋ
+  digeut: ['tieut'],  // ㄷ + bar = ㅌ
+  jieut: ['chieut'],  // ㅈ + cap = ㅊ
+  ieung: ['hieut'],   // ㅇ + top = ㅎ
+};
+
+function strokeBBox(pts) {
+  let mnx = Infinity, mny = Infinity, mxx = -Infinity, mxy = -Infinity;
+  for (const p of pts) { mnx = Math.min(mnx, p.x); mny = Math.min(mny, p.y); mxx = Math.max(mxx, p.x); mxy = Math.max(mxy, p.y); }
+  return { mnx, mny, mxx, mxy };
+}
+// Is stroke `b` drawn on/near the letter-so-far `a` (a continuation stroke)?
+function strokesNear(a, b) {
+  const A = strokeBBox(a), B = strokeBBox(b);
+  const tol = 0.45 * Math.max(A.mxx - A.mnx, A.mxy - A.mny, 44);
+  return !(B.mnx > A.mxx + tol || B.mxx < A.mnx - tol || B.mny > A.mxy + tol || B.mxy < A.mny - tol);
+}
+
 const TUTORIAL_STEPS = [
   { key: 'tut.1', target: '가' },
   { key: 'tut.2', target: '까' },
@@ -49,6 +83,7 @@ export class Game {
 
     this.stroke = [];        // current drawing points (screen space)
     this.heldStrokes = [];   // strokes drawn so far this hold-mode syllable (kept on screen)
+    this.prev = null;        // last jamo's strokes, for multi-stroke letter merging
     this.drawing = false;
     this.lastRecognition = null;
 
@@ -113,6 +148,7 @@ export class Game {
   clearCompose() {
     this.compose = { jamos: [], timer: 0, x: this.W / 2, y: this.H * 0.2 };
     this.heldStrokes = [];
+    this.prev = null;
     this.holdMode = false;
     if (this.ui) this.ui.setHold(false);
     Audio.miss();
@@ -667,11 +703,51 @@ export class Game {
 
   finishStroke() {
     if (this.stroke.length < 4) { this.stroke = []; return; }
-    const last = this.stroke[this.stroke.length - 1];
-    if (!this.addStroke(this.stroke, last)) this.missStroke(last);
+    const st = this.stroke;
+    const last = st[st.length - 1];
+    let consumed = false;
+    // First try to fold this stroke into the previous letter (multi-stroke
+    // letters: ㅏ as bar+tick, ㅋ as ㄱ+bar, ㅁ as several strokes, …).
+    if (this.tryMergeStroke(st, last)) consumed = true;
+    else if (this.addStroke(st, last)) { consumed = true; this.rememberStroke(st); }
+    if (!consumed) this.missStroke(last);
     // in hold mode, keep each accepted stroke on screen while composing
-    else if (this.holdMode) this.heldStrokes.push(this.stroke);
+    else if (this.holdMode) this.heldStrokes.push(st);
     this.stroke = [];
+  }
+
+  // Remember the strokes that formed the most recent jamo so a follow-up
+  // stroke can refine it into a multi-stroke letter.
+  rememberStroke(st) {
+    const j = this.compose.jamos;
+    if (j.length === 0) { this.prev = null; return; }
+    const idx = j.length - 1;
+    const id = j[idx];
+    this.prev = { points: st.slice(), idx, id, category: jamoCategory(id), time: Date.now() };
+  }
+
+  // If `st` continues the previous letter (e.g. the tick that turns a drawn
+  // bar ㅣ into ㅏ), recognise the combined strokes and refine that jamo in
+  // place — but only when the combination clearly beats the stroke on its own,
+  // so genuinely separate jamo (ㄱ then ㅏ) are never merged.
+  tryMergeStroke(st, at) {
+    const p = this.prev;
+    if (!p || st.length < 4) return false;
+    if (Date.now() - p.time > 1300) { this.prev = null; return false; }
+    const allowed = EXTEND[p.id];
+    if (!allowed) return false;
+    if (!strokesNear(p.points, st)) return false;
+    // a continuation stroke drawn near the previous letter refines it — accept
+    // only whitelisted extensions, so separate jamo are never merged.
+    const merged = p.points.concat(st);
+    const mr = this.recognizer.recognize(merged, p.category);
+    if (!mr.id || mr.score < 0.66 || !allowed.includes(mr.id)) return false;
+    if (!this.usable(mr.id)) return false;
+    // refine the previous jamo in place
+    this.compose.jamos[p.idx] = mr.id;
+    p.points = merged; p.id = mr.id; p.time = Date.now();
+    this.addJamo(null, at);
+    return true;
   }
 
   // Feed one drawn stroke into the syllable being composed, handling doubled
@@ -799,6 +875,7 @@ export class Game {
     const char = composeSyllable(jamos);
     const spell = buildSyllableSpell(jamos);
     this.compose = { jamos: [], timer: 0, x: this.compose.x, y: this.compose.y };
+    this.prev = null;
     if (spell) this.castSpell(spell, jamos[0]);
     if (this.tutorial && this.tutorial.active) this.tutorialCheck(char);
   }
@@ -858,6 +935,7 @@ export class Game {
     this.holdMode = true;
     this.compose = { jamos: [], timer: 0, x: this.W / 2, y: this.H * 0.2 };
     this.heldStrokes = [];
+    this.prev = null;
     Audio.compose(0);
     if (this.ui) this.ui.setHold(true);
   }
@@ -897,6 +975,7 @@ export class Game {
     this.state.gateHp = this.state.gateMax;
     this.compose = { jamos: [], timer: 0, x: 0, y: 0 };
     this.heldStrokes = [];
+    this.prev = null;
     this.holdMode = false;
     this.combo = 0;
     this.comboTimer = 0;
