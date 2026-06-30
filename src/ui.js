@@ -5,10 +5,9 @@ import {
 } from './attacks.js';
 import { UPGRADES, UPGRADE_ORDER } from './upgrades.js';
 import { t, getLang, setLang, localName } from './i18n.js';
-import { THEMES, THEME_ORDER, getThemeId, setTheme } from './themes.js';
 import { Audio } from './audio.js';
 import * as Prog from './progression.js';
-import { paintCrest, paintGameOverSeal } from './art.js';
+import { paintGameOverSeal } from './art.js';
 
 export class UI {
   constructor() {
@@ -108,25 +107,8 @@ export class UI {
     if (this.game) this.refreshShop();
   }
 
-  // ---- settings (themes + language + sound) ---------------------------------
+  // ---- settings (language + sound) ------------------------------------------
   buildSettings() {
-    // art styles
-    const themeRow = document.getElementById('themeRow');
-    themeRow.innerHTML = '';
-    for (const id of THEME_ORDER) {
-      const tdef = THEMES[id];
-      const b = document.createElement('button');
-      b.className = 'opt-btn' + (id === getThemeId() ? ' active' : '');
-      b.innerHTML = `<span class="opt-swatch" style="background:linear-gradient(135deg,${tdef.ui.gold},${tdef.ui.ink})"></span>` +
-        `<span>${getLang() === 'en' ? tdef.nameEn : tdef.name}</span>`;
-      b.addEventListener('click', () => {
-        setTheme(id);
-        Audio.buy();
-        this.buildSettings();
-        paintCrest();
-      });
-      themeRow.appendChild(b);
-    }
     // language
     const langRow = document.getElementById('langRow');
     langRow.innerHTML = '';

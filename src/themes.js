@@ -70,46 +70,9 @@ export const THEMES = {
     ui: { ink: '#9aa7b8', gold: '#c79a3e', panel: 'rgba(20,17,28,0.93)', line: 'rgba(220,210,188,0.14)', text: '#f3eefc' },
   },
 
-  cyberpunk: {
-    id: 'cyberpunk', name: '네온', nameEn: 'Cyberpunk', style: 'neon',
-    sky: [[0, '#08030f'], [0.45, '#190a30'], [0.72, '#33103f'], [1, '#05020c']],
-    star: '#7df9ff',
-    moon: { core: '#ff4fb0', edge: '#7a1f6a', halo: 'rgba(255,60,160,0.30)', ring: '#19d3ff' },
-    ridge: ['#160a2c', '#21103e', '#2c1550'],
-    crest: '#ff3cac',
-    ground: ['#0c0820', '#05030d'],
-    mist: '#2bd6ff',
-    taegeuk: ['#ff3cac', '#19d3ff'],
-    glow: 1.25, additive: true,
-    stroke: {
-      bleed: 'rgba(25,211,255,0.5)', bleedShadow: '#19d3ff', bleedBlur: 22,
-      body: 'rgba(190,255,255,0.95)', core: 'rgba(255,60,172,0.7)', head: '#d8ffff',
-    },
-    fx: (c) => adjust(c, 0.45, 0.16),
-    ui: { ink: '#19d3ff', gold: '#ff3cac', panel: 'rgba(10,6,22,0.92)', line: 'rgba(120,255,255,0.20)', text: '#eafcff' },
-  },
-
-  ancient: {
-    id: 'ancient', name: '고대', nameEn: 'Ancient', style: 'stone',
-    sky: [[0, '#241430'], [0.4, '#5e2f2a'], [0.66, '#9c5a32'], [0.86, '#c98a4a'], [1, '#6e4026']],
-    star: '#ffe6b8',
-    moon: { core: '#ffd98a', edge: '#dd8a3e', halo: 'rgba(255,180,90,0.30)', ring: null },
-    ridge: ['#3a261e', '#4c3324', '#5e4030'],
-    crest: 'rgba(30,18,10,0.5)',
-    ground: ['#6a4a32', '#2c1c12'],
-    mist: '#e6c79a',
-    taegeuk: ['#a85a32', '#caa14a'],
-    glow: 0.5, additive: false,
-    stroke: {
-      bleed: 'rgba(40,22,10,0.4)', bleedShadow: 'rgba(30,16,6,0.85)', bleedBlur: 7,
-      body: 'rgba(247,228,186,0.93)', core: 'rgba(120,70,34,0.7)', head: '#f3e2b6',
-    },
-    fx: (c) => adjust(c, -0.04, 0.04, 10),
-    ui: { ink: '#d6a45a', gold: '#caa14a', panel: 'rgba(28,18,14,0.93)', line: 'rgba(220,180,120,0.18)', text: '#f5ead6' },
-  },
 };
 
-export const THEME_ORDER = ['calligraphy', 'cyberpunk', 'ancient'];
+export const THEME_ORDER = ['calligraphy'];
 
 let current = 'calligraphy';
 try {

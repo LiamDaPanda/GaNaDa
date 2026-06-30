@@ -656,7 +656,7 @@ export function drawDokkaebi(ctx, e, time = 0) {
   roundedBar(ctx, bx, by, bw * frac, 4, `hsl(${frac * 120}, 42%, 46%)`);
   if (boss) {
     ctx.fillStyle = T.ui.gold;
-    ctx.font = 'bold 12px "Apple SD Gothic Neo", system-ui, sans-serif';
+    ctx.font = "bold 13px 'Gowun Batang', 'Apple SD Gothic Neo', serif";
     ctx.textAlign = 'center';
     ctx.fillText(e.def.name, x, by - 6);
   }

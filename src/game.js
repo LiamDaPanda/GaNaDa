@@ -15,6 +15,10 @@ import * as Prog from './progression.js';
 
 const SAVE_KEY = 'ganada_save_v1';
 
+// Calligraphic type for on-canvas text (matches the CSS font variables).
+const F_BODY = "'Gowun Batang', 'Apple SD Gothic Neo', 'Malgun Gothic', serif";
+const F_BRUSH = "'Nanum Brush Script', cursive";
+
 const TUTORIAL_STEPS = [
   { key: 'tut.1', target: '가' },
   { key: 'tut.2', target: '까' },
@@ -1034,11 +1038,11 @@ export class Game {
 
     // floating text
     ctx.textAlign = 'center';
-    ctx.font = 'bold 16px system-ui';
+    ctx.font = `bold 16px ${F_BODY}`;
     for (const t of this.texts) {
       ctx.globalAlpha = Math.max(0, t.life / t.maxLife);
       ctx.fillStyle = t.color;
-      ctx.font = `bold ${t.size}px system-ui, sans-serif`;
+      ctx.font = `bold ${t.size}px ${F_BODY}`;
       ctx.strokeStyle = 'rgba(0,0,0,0.6)';
       ctx.lineWidth = 3;
       ctx.strokeText(t.text, t.x, t.y);
@@ -1079,10 +1083,10 @@ export class Game {
     ctx.fillStyle = '#c79a3e';
     ctx.shadowColor = '#9c6b32';
     ctx.shadowBlur = 12;
-    ctx.font = 'bold 30px system-ui, sans-serif';
-    ctx.fillText(`${this.combo}`, 0, 0);
+    ctx.font = `bold 34px ${F_BRUSH}`;
+    ctx.fillText(`${this.combo}`, 0, 2);
     ctx.shadowBlur = 0;
-    ctx.font = 'bold 13px system-ui, sans-serif';
+    ctx.font = `bold 13px ${F_BODY}`;
     ctx.fillStyle = '#fff';
     ctx.fillText(t('hud.combo'), 0, -24);
     ctx.fillStyle = '#9aa7b8';
@@ -1117,10 +1121,10 @@ export class Game {
     ctx.shadowColor = this.holdMode ? '#c79a3e' : '#9aa7b8';
     ctx.shadowBlur = 16;
     ctx.fillStyle = '#fff';
-    ctx.font = 'bold 44px "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif';
+    ctx.font = `bold 46px ${F_BODY}`;
     ctx.fillText(char || '…', cx, cy + 2);
     ctx.shadowBlur = 0;
-    ctx.font = '12px system-ui';
+    ctx.font = `12px ${F_BODY}`;
     ctx.fillStyle = 'rgba(255,255,255,0.7)';
     const hint = this.holdMode ? t('compose.keepGoing') : (this.compose.jamos.length === 1 ? t('compose.addVowel') : '');
     if (hint) ctx.fillText(hint, cx, cy + 56);
