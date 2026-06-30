@@ -465,10 +465,10 @@ export function drawDokkaebi(ctx, e, time = 0) {
     ctx.translate(-x, -y);
   }
 
-  // ground shadow (under the round body)
+  // ground shadow (under the circle)
   ctx.save();
-  ctx.translate(x, e.y + r * 1.78); ctx.scale(1, 0.26);
-  inkBlob(ctx, 0, 0, r * 0.8, seed + 3, 0.3, 9);
+  ctx.translate(x, e.y + r * 1.05); ctx.scale(1, 0.28);
+  inkBlob(ctx, 0, 0, r * 0.82, seed + 3, 0.3, 9);
   ctx.fillStyle = 'rgba(0,0,0,0.34)'; ctx.fill();
   ctx.restore();
 
@@ -476,24 +476,11 @@ export function drawDokkaebi(ctx, e, time = 0) {
   if (frozen) body = '#6fb6d6';
   body = T.fx(body);
 
-  // ORV-style 도깨비: a fluffy round head, short horns, big red eyes and a
-  // fanged grin, sitting on a round body that carries the type colour.
-  const furBase = flash ? '#ffffff' : mix(body, '#efe6d2', 0.72);
-  const furLt = flash ? '#ffffff' : mix(body, '#fbf5e8', 0.86);
-  const furDk = flash ? '#e8e8ee' : mix(body, '#b8ab8f', 0.5);
-
-  // --- round body (behind the head, carries the type colour) ---
-  {
-    const byc = y + r * 1.04, brx = r * 0.82, bry = r * 0.8;
-    ctx.beginPath();
-    ctx.ellipse(x, byc, brx, bry, 0, 0, Math.PI * 2);
-    const cg = ctx.createRadialGradient(x - brx * 0.32, byc - bry * 0.42, brx * 0.2, x, byc, brx * 1.3);
-    cg.addColorStop(0, flash ? '#fff' : shift(body, 22));
-    cg.addColorStop(0.7, flash ? '#f0f0f4' : body);
-    cg.addColorStop(1, flash ? '#d8d8e0' : shift(body, -52));
-    ctx.fillStyle = cg; ctx.fill();
-    ctx.lineWidth = Math.max(1, r * 0.05); ctx.strokeStyle = 'rgba(8,6,12,0.45)'; ctx.stroke();
-  }
+  // ORV-style 도깨비: just a fluffy round head with short horns, big red
+  // eyes and a fanged grin — no body.
+  const furBase = flash ? '#ffffff' : mix(body, '#e7ddc6', 0.62);
+  const furLt = flash ? '#ffffff' : mix(body, '#fbf5e8', 0.8);
+  const furDk = flash ? '#e8e8ee' : mix(body, '#a89a7e', 0.45);
 
   const fr = rng(seed + 5);
 
