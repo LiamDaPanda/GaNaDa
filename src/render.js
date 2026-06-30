@@ -693,7 +693,7 @@ export function drawDokkaebi(ctx, e, time = 0) {
     ctx.fillStyle = T.ui.gold;
     ctx.font = "bold 13px 'Gowun Batang', 'Apple SD Gothic Neo', serif";
     ctx.textAlign = 'center';
-    ctx.fillText(e.def.name, x, by - 6);
+    ctx.fillText(e.bossName || e.def.name, x, by - 6);
   }
   ctx.restore();
 }

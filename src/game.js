@@ -9,7 +9,8 @@ import { Audio } from './audio.js';
 import { drawDokkaebi, drawGate, drawBackground, brushStroke, inkBlob } from './render.js';
 import { UPGRADES } from './upgrades.js';
 import { getTheme } from './themes.js';
-import { t } from './i18n.js';
+import { t, getLang } from './i18n.js';
+import { regionInfo, regionName, bossName } from './regions.js';
 import { Ring, Flash, Bolt, Beam, Shards, Streak, Wisp, Smoke, Crack, Crystal, Gas, Rays } from './effects.js';
 import { InkWash, InkSplat, Enso, BrushSlash, InkGlyph, Sparkle } from './effects.js';
 import * as Prog from './progression.js';
@@ -249,7 +250,10 @@ export class Game {
   startWave() {
     this.waveActive = true;
     const w = this.state.wave;
-    const isBoss = w % 5 === 0;
+    const info = regionInfo(w);
+    const isBoss = info.isBoss;
+    const en = getLang() === 'en';
+    if (this.ui) this.ui.setRegionTint(info.region.accent);
     this.spawnQueue = [];
     const count = isBoss ? 6 + Math.floor(w / 5) : 5 + Math.floor(w * 1.3);
     const hpMul = 1 + (w - 1) * 0.18;
@@ -261,12 +265,20 @@ export class Game {
       this.spawnQueue.push({ type, hpMul, delay: 0.5 + i * Math.max(0.35, 1.1 - w * 0.03) });
     }
     if (isBoss) {
-      this.spawnQueue.push({ type: 'boss', hpMul: 1 + (w / 5 - 1) * 0.6, delay: this.spawnQueue.length * 0.8 + 1 });
+      this.spawnQueue.push({ type: 'boss', hpMul: 1 + (info.idx * 0.6), delay: this.spawnQueue.length * 0.8 + 1, name: bossName(info, en) });
     }
     this.spawnElapsed = 0;
     this.spawnIndex = 0;
     Audio.wave();
-    this.ui.banner(t('banner.wave', { w }), isBoss ? `<svg class="ic"><use href="#ic-warn"/></svg> ${t('banner.boss')}` : '');
+    // RPG journey: chapter intro on a new region, else a stage / boss banner
+    if (this.ui) this.ui.journey(regionName(info, en), info.stage, info.stages, isBoss);
+    if (info.isFirst) {
+      if (this.ui) this.ui.regionCard(regionName(info, en), en ? info.region.subEn : info.region.sub, info.region.accent);
+    } else if (isBoss) {
+      this.ui.banner(bossName(info, en), `<svg class="ic"><use href="#ic-warn"/></svg> ${t('banner.boss')}`);
+    } else {
+      this.ui.banner(regionName(info, en), t('banner.stage', { n: info.stage, m: info.stages }));
+    }
   }
 
   spawnUpdate(dt) {
@@ -277,19 +289,37 @@ export class Game {
       const s = this.spawnQueue[this.spawnIndex];
       const scale = s.type === 'boss' ? 1 : 0.85 + Math.random() * 0.4;
       const y = this.laneY - 10 + (Math.random() * 40 - 20);
-      this.enemies.push(new Enemy(s.type, this.W + 40, y, scale, s.hpMul));
+      const enemy = new Enemy(s.type, this.W + 40, y, scale, s.hpMul);
+      if (s.name) enemy.bossName = s.name;
+      this.enemies.push(enemy);
       this.spawnIndex++;
     }
     if (this.spawnIndex >= this.spawnQueue.length && this.enemies.length === 0) {
       // wave cleared
       this.waveActive = false;
+      const cleared = regionInfo(this.state.wave);
+      const en = getLang() === 'en';
       this.state.wave++;
       this.bestWave = Math.max(this.bestWave || 1, this.state.wave);
       this.state.gold += 10 + this.state.wave * 2;
-      this.texts.push(new FloatingText(this.W / 2, this.H * 0.4, t('toast.waveClear'), '#c9a44e', 26));
+      if (cleared.isBoss) {
+        // region cleared — RPG reward + celebration
+        const bonus = 40 + this.state.wave * 6;
+        this.state.gold += bonus;
+        this.gainXp(60 + this.state.wave * 10);
+        const got = Prog.grantUnlock();
+        if (this.ui) this.ui.regionClear(regionName(cleared, en), bonus, got ? jamoChar(got) : null);
+        if (got && this.ui) this.ui.buildSpellbook();
+        for (let i = 0; i < 6; i++) {
+          this.effects.push(new Sparkle(this.W * (0.18 + Math.random() * 0.64), this.H * (0.22 + Math.random() * 0.26), 36 + Math.random() * 44, '#ffe6a0', 0.9));
+        }
+        this.shake = Math.min(20, this.shake + 10);
+      } else {
+        this.texts.push(new FloatingText(this.W / 2, this.H * 0.4, t('toast.waveClear'), '#c9a44e', 26));
+      }
       this.gainXp(25 + this.state.wave * 12);
       this.save();
-      setTimeout(() => { if (!this.gameOver && !this.tutorial.active) this.startWave(); }, 1600);
+      setTimeout(() => { if (!this.gameOver && !this.tutorial.active) this.startWave(); }, cleared.isBoss ? 2800 : 1600);
     }
   }
 

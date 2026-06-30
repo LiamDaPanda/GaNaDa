@@ -220,6 +220,44 @@ export class UI {
     this.bannerTimer = setTimeout(() => b.classList.remove('show'), 1800);
   }
 
+  // --- RPG journey UI -------------------------------------------------------
+  // Region name + a row of stage pips (the chapter's progress).
+  journey(name, stage, total, isBoss = false) {
+    const el = document.getElementById('journey');
+    if (!el) return;
+    document.getElementById('journeyName').textContent = name;
+    let h = '';
+    for (let i = 1; i <= total; i++) {
+      const cls = i < stage ? 'done' : (i === stage ? 'cur' : '');
+      h += `<span class="pip ${cls}${i === total ? ' boss' : ''}"></span>`;
+    }
+    document.getElementById('journeyPips').innerHTML = h;
+    el.classList.add('show');
+  }
+
+  // Big chapter-intro card shown when a new region begins.
+  regionCard(name, sub, accent) {
+    const el = document.getElementById('regionCard');
+    if (!el) return;
+    el.style.setProperty('--rc-accent', accent || '#c79a3e');
+    el.querySelector('.rc-chapter').textContent = t('region.chapter');
+    el.querySelector('.rc-name').textContent = name;
+    el.querySelector('.rc-sub').textContent = sub || '';
+    el.classList.add('show');
+    clearTimeout(this._rcTimer);
+    this._rcTimer = setTimeout(() => el.classList.remove('show'), 2400);
+  }
+
+  // Region-cleared celebration (reuses the banner with a reward line).
+  regionClear(name, gold, letter) {
+    const sub = letter ? t('region.rewardLetter', { g: gold, j: letter }) : t('region.reward', { g: gold });
+    this.banner(t('region.clear', { name }), sub);
+  }
+
+  setRegionTint(accent) {
+    document.documentElement.style.setProperty('--region-accent', accent || 'transparent');
+  }
+
   updateHUD(s, best, enemiesLeft = 0, lowInk = false) {
     this.el.wave.textContent = s.wave;
     this.el.gold.textContent = Math.floor(s.gold);

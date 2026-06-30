@@ -46,6 +46,8 @@
 
   <div id="app">
     <canvas id="game"></canvas>
+    <!-- faint per-region mood tint -->
+    <div id="regionTint"></div>
 
     <!-- Top HUD -->
     <header id="hud">
@@ -76,6 +78,9 @@
       </div>
     </div>
 
+    <!-- RPG journey: region name + stage pips -->
+    <div id="journey"><span id="journeyName"></span><span id="journeyPips"></span></div>
+
     <!-- Drawing controls -->
     <div id="drawctrl">
       <button id="holdBtn" class="draw-btn"><svg class="ic"><use href="#ic-brush"/></svg> <span data-i18n="btn.hold">Hold Draw</span></button>
@@ -98,6 +103,13 @@
 
     <!-- Wave banner -->
     <div id="banner"></div>
+
+    <!-- RPG chapter intro card -->
+    <div id="regionCard"><div class="rc-inner">
+      <div class="rc-chapter"></div>
+      <div class="rc-name"></div>
+      <div class="rc-sub"></div>
+    </div></div>
 
     <!-- Shop: upgrades + summon -->
     <aside id="shop">

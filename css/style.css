@@ -103,6 +103,61 @@ html, body {
   pointer-events: none;
   z-index: 4;
 }
+
+/* ---------- RPG journey ---------- */
+#regionTint {
+  position: absolute; inset: 0; pointer-events: none; z-index: 1;
+  background: radial-gradient(120% 80% at 50% 8%, var(--region-accent, transparent) 0%, transparent 52%);
+  opacity: 0.14; mix-blend-mode: screen;
+  transition: opacity 0.9s ease, background 0.9s ease;
+}
+#journey {
+  position: absolute;
+  top: calc(max(8px, env(safe-area-inset-top)) + 86px);
+  left: 12px; right: 12px;
+  display: flex; align-items: center; gap: 8px;
+  pointer-events: none; z-index: 4;
+  opacity: 0; transition: opacity 0.4s;
+}
+#journey.show { opacity: 0.92; }
+#journeyName {
+  font-family: var(--font-brush); font-size: 17px; letter-spacing: 0.02em;
+  color: var(--text, #f3eefc); text-shadow: 0 1px 6px rgba(0,0,0,0.7);
+}
+#journeyPips { display: flex; gap: 5px; align-items: center; margin-left: 2px; }
+.pip {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: rgba(255,255,255,0.22); border: 1px solid rgba(255,255,255,0.28);
+}
+.pip.done { background: var(--gold); border-color: var(--gold); }
+.pip.cur { background: #fff; border-color: #fff; box-shadow: 0 0 8px rgba(255,255,255,0.7); }
+.pip.boss { width: 9px; height: 9px; border-radius: 2px 4px 2px 4px; }
+
+#regionCard {
+  position: absolute; inset: 0; z-index: 18;
+  display: flex; align-items: center; justify-content: center;
+  pointer-events: none; opacity: 0;
+  transition: opacity 0.5s ease;
+}
+#regionCard.show { opacity: 1; }
+#regionCard .rc-inner {
+  text-align: center; padding: 22px 30px;
+  transform: translateY(8px) scale(0.98);
+  transition: transform 0.5s ease;
+  border-top: 2px solid var(--rc-accent, #c79a3e);
+  border-bottom: 2px solid var(--rc-accent, #c79a3e);
+  background: linear-gradient(180deg, rgba(8,6,14,0) 0%, rgba(8,6,14,0.45) 50%, rgba(8,6,14,0) 100%);
+}
+#regionCard.show .rc-inner { transform: translateY(0) scale(1); }
+.rc-chapter {
+  font-size: 12px; letter-spacing: 0.42em; text-indent: 0.42em;
+  color: var(--rc-accent, #c79a3e); font-weight: 700; margin-bottom: 6px;
+}
+.rc-name {
+  font-family: var(--font-brush); font-size: 44px; color: #fff;
+  text-shadow: 0 2px 16px rgba(0,0,0,0.8);
+}
+.rc-sub { font-size: 14px; opacity: 0.82; margin-top: 6px; }
 .bar { flex: 1; }
 .bar-label { font-size: 11px; opacity: 0.85; margin-bottom: 2px; }
 .bar-track {

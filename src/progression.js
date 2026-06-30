@@ -78,6 +78,13 @@ export function addXp(amount) {
   return res;
 }
 
+// Directly unlock the next letter in the guided order (region-clear reward).
+export function grantUnlock() {
+  const id = nextLockedInOrder();
+  if (id) { doUnlock(id); save(); return id; }
+  return null;
+}
+
 export function gachaCost() { return Math.round(60 * Math.pow(1.25, state.pulls)); }
 export function canPull() { return lockedPool().length > 0; }
 
