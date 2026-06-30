@@ -453,10 +453,7 @@ export function drawDokkaebi(ctx, e, time = 0) {
   const flash = e.hitFlash > 0;
   const frozen = e.slowT > 0;
   const seed = e.id * 131 + 7;
-  const swing = Math.sin(e.bob * 1.2) * 0.4;
   const boss = e.def.boss;
-  const maneTint = e.type === 'red' ? '#ff7a3a' : e.type === 'green' ? '#8fe06a'
-    : boss ? '#ffd24a' : '#7fd0ff';
 
   // gate lunge: surge toward the gate (left), lean and swell at the peak
   if (e.attacking) {
@@ -479,166 +476,144 @@ export function drawDokkaebi(ctx, e, time = 0) {
   if (frozen) body = '#6fb6d6';
   body = T.fx(body);
 
-  // --- wild flame mane (behind the head) ---
-  const mr = rng(seed + 71);
-  for (let i = 0; i < 11; i++) {
-    const a = -Math.PI * 1.02 + (i / 10) * Math.PI * 1.04;
-    const bx = x + Math.cos(a) * r * 0.86;
-    const by = y + Math.sin(a) * r * 0.86;
-    const len = r * (0.5 + mr() * 0.55) * (boss ? 1.3 : 1);
-    const curl = (mr() - 0.5) * r * 0.5;
-    const tipX = bx + Math.cos(a) * len + curl;
-    const tipY = by + Math.sin(a) * len - len * 0.25;
-    const midX = (bx + tipX) / 2 + curl * 0.4;
-    const midY = (by + tipY) / 2 - len * 0.18;
-    brushStroke(ctx, [{ x: bx, y: by }, { x: midX, y: midY }, { x: tipX, y: tipY }], r * 0.17, shift(body, -34), true);
-    // glowing wisp tip
-    ctx.save();
-    ctx.globalAlpha = 0.5;
-    ctx.fillStyle = T.fx(maneTint);
-    if (G > 0.7) { ctx.shadowColor = ctx.fillStyle; ctx.shadowBlur = 6 * G; }
-    inkBlob(ctx, tipX, tipY, r * 0.07, seed + i * 13, 0.4, 6); ctx.fill();
+  // ORV-style 도깨비: a fluffy near-square head, short horns, big red eyes,
+  // a fanged grin and furry hands cupping its own cheeks — over a draped cloak.
+  const furBase = flash ? '#ffffff' : mix(body, '#efe6d2', 0.72);
+  const furLt = flash ? '#ffffff' : mix(body, '#fbf5e8', 0.86);
+  const furDk = flash ? '#e8e8ee' : mix(body, '#b8ab8f', 0.5);
+  const tw = r * 0.96, bwd = r * 0.74, ty = y - r * 1.02, byb = y + r * 0.98;
+
+  // --- draped cloak / robe (behind the head, carries the type colour) ---
+  {
+    const cy0 = y + r * 0.45, hem = y + r * 1.78;
+    ctx.beginPath();
+    ctx.moveTo(x - r * 0.46, cy0);
+    ctx.quadraticCurveTo(x - r * 1.18, y + r * 1.0, x - r * 1.02, hem);
+    ctx.lineTo(x - r * 0.62, hem - r * 0.13); ctx.lineTo(x - r * 0.32, hem);
+    ctx.lineTo(x, hem - r * 0.15); ctx.lineTo(x + r * 0.32, hem);
+    ctx.lineTo(x + r * 0.62, hem - r * 0.13); ctx.lineTo(x + r * 1.02, hem);
+    ctx.quadraticCurveTo(x + r * 1.18, y + r * 1.0, x + r * 0.46, cy0);
+    ctx.closePath();
+    const cg = ctx.createLinearGradient(x, cy0, x, hem);
+    cg.addColorStop(0, shift(body, 6)); cg.addColorStop(1, shift(body, -56));
+    ctx.fillStyle = cg; ctx.fill();
+    ctx.lineWidth = Math.max(1, r * 0.05); ctx.strokeStyle = 'rgba(8,6,12,0.5)'; ctx.stroke();
+  }
+
+  // --- soft fluffy fur puffs around the silhouette (behind the head fill) ---
+  const fr = rng(seed + 5);
+  for (let i = 0; i < 22; i++) {
+    const t = i / 21; const a = Math.PI * 0.8 + t * Math.PI * 1.4;
+    const bxp = x + Math.cos(a) * tw * 0.98;
+    const byp = (y - r * 0.03) + Math.sin(a) * r * 0.95;
+    const pr = r * (0.12 + fr() * 0.08);
+    ctx.fillStyle = i % 3 ? furBase : furLt;
+    inkBlob(ctx, bxp + Math.cos(a) * pr * 0.4, byp + Math.sin(a) * pr * 0.4, pr, seed + i * 7, 0.42, 7); ctx.fill();
+  }
+
+  // --- short curved amber horns poking through the top fluff ---
+  for (const s of [-1, 1]) {
+    const hx = x + s * r * 0.5, hy = y - r * 0.78;
+    brushStroke(ctx, [
+      { x: hx, y: hy + r * 0.16 },
+      { x: hx + s * r * 0.2, y: hy - r * 0.16 },
+      { x: hx + s * r * 0.04, y: hy - r * 0.54 },
+    ], r * 0.17, '#c79a46', true);
+    ctx.save(); ctx.globalAlpha = 0.55;
+    brushStroke(ctx, [{ x: hx + s * r * 0.13, y: hy - r * 0.26 }, { x: hx + s * r * 0.04, y: hy - r * 0.54 }], r * 0.06, '#6e4f22', true);
     ctx.restore();
   }
 
-  // pointed ears
-  for (const s of [-1, 1]) {
-    brushStroke(ctx, [
-      { x: x + s * r * 0.82, y: y - r * 0.05 },
-      { x: x + s * r * 1.18, y: y - r * 0.28 },
-      { x: x + s * r * 0.78, y: y - r * 0.35 },
-    ], r * 0.18, shift(body, -10), true);
-  }
-
-  // spiked club
-  ctx.save();
-  ctx.translate(x - r * 0.7, y + r * 0.3); ctx.rotate(-0.5 + swing);
-  brushStroke(ctx, [{ x: 0, y: 0 }, { x: -1, y: -r * 0.5 }, { x: 0, y: -r * 0.95 }], r * 0.17, '#4e3520', false);
-  ctx.fillStyle = '#5e3f26';
-  inkBlob(ctx, 0, -r * 1.02, r * 0.27, seed + 11, 0.22, 9); ctx.fill();
-  ctx.fillStyle = '#caa86a';
-  for (let i = 0; i < 5; i++) {
-    const a = (i / 5) * Math.PI * 2;
-    ctx.beginPath();
-    ctx.arc(Math.cos(a) * r * 0.27, -r * 1.02 + Math.sin(a) * r * 0.27, r * 0.045, 0, Math.PI * 2); ctx.fill();
-  }
-  ctx.restore();
-
-  // --- head (slightly angular ink silhouette) ---
-  ctx.save();
-  ctx.translate(x, y); ctx.scale(1, 1.06); ctx.translate(-x, -y);
-  inkBlob(ctx, x, y, r, seed, 0.12, 12);
-  ctx.restore();
+  // --- the fluffy near-square head ---
+  ctx.beginPath();
+  ctx.moveTo(x - tw, ty + r * 0.34);
+  ctx.quadraticCurveTo(x - tw, ty, x - tw * 0.52, ty - r * 0.02);
+  ctx.quadraticCurveTo(x, ty - r * 0.12, x + tw * 0.52, ty - r * 0.02);
+  ctx.quadraticCurveTo(x + tw, ty, x + tw, ty + r * 0.34);
+  ctx.quadraticCurveTo(x + bwd * 1.08, byb - r * 0.22, x + bwd, byb);
+  ctx.quadraticCurveTo(x, byb + r * 0.2, x - bwd, byb);
+  ctx.quadraticCurveTo(x - bwd * 1.08, byb - r * 0.22, x - tw, ty + r * 0.34);
+  ctx.closePath();
   if (flash) ctx.fillStyle = '#fff';
   else {
-    const bg = ctx.createRadialGradient(x - r * 0.32, y - r * 0.38, r * 0.2, x, y, r * 1.1);
-    bg.addColorStop(0, shift(body, 34));
-    bg.addColorStop(0.65, body);
-    bg.addColorStop(1, shift(body, -34));
+    const bg = ctx.createRadialGradient(x - r * 0.3, y - r * 0.5, r * 0.2, x, y, r * 1.25);
+    bg.addColorStop(0, furLt); bg.addColorStop(0.6, furBase); bg.addColorStop(1, furDk);
     ctx.fillStyle = bg;
   }
-  if (G > 1) { ctx.shadowColor = body; ctx.shadowBlur = 10; }
   ctx.fill();
-  ctx.shadowBlur = 0;
-  ctx.lineWidth = Math.max(1.5, r * 0.07);
-  ctx.strokeStyle = G > 1 ? withAlpha(T.ui.ink, 0.8) : 'rgba(12,8,16,0.6)';
-  ctx.stroke();
-
-  // rim light (upper-left crescent)
-  ctx.save();
-  ctx.globalAlpha = G > 1 ? 0.6 : 0.32;
-  ctx.strokeStyle = G > 1 ? T.fx(maneTint) : 'rgba(255,250,235,0.9)';
-  ctx.lineWidth = r * 0.12;
-  ctx.lineCap = 'round';
-  ctx.beginPath();
-  ctx.arc(x, y, r * 0.92, Math.PI * 0.86, Math.PI * 1.42);
-  ctx.stroke();
+  ctx.lineWidth = Math.max(1.2, r * 0.05); ctx.strokeStyle = 'rgba(20,14,10,0.4)'; ctx.stroke();
+  // soft rim light, upper-left
+  ctx.save(); ctx.globalAlpha = 0.5; ctx.strokeStyle = 'rgba(255,252,244,0.9)';
+  ctx.lineWidth = r * 0.1; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.arc(x, y - r * 0.05, r * 0.82, Math.PI * 0.92, Math.PI * 1.4); ctx.stroke();
   ctx.restore();
 
-  // --- curved menacing horns ---
-  for (const s of [-1, 1]) {
-    brushStroke(ctx, [
-      { x: x + s * r * 0.4, y: y - r * 0.6 },
-      { x: x + s * r * 0.82, y: y - r * 1.0 },
-      { x: x + s * r * 1.04, y: y - r * 1.5 },
-      { x: x + s * r * 0.86, y: y - r * 1.66 },
-    ], r * 0.3, e.def.horn, true);
-    // horn ridge line
-    ctx.save(); ctx.globalAlpha = 0.4;
-    brushStroke(ctx, [
-      { x: x + s * r * 0.5, y: y - r * 0.7 },
-      { x: x + s * r * 0.82, y: y - r * 1.05 },
-      { x: x + s * r * 0.92, y: y - r * 1.4 },
-    ], r * 0.07, 'rgba(60,40,20,0.8)', true);
-    ctx.restore();
-  }
-
-  // --- boss: cracked jade mask + golden crown + aura ---
+  // --- boss regalia: red aura + golden crown ---
   if (boss) {
     ctx.save();
-    ctx.strokeStyle = withAlpha(T.fx('#ffcaa0'), 0.5);
-    ctx.lineWidth = 2; ctx.shadowColor = T.fx('#ff7a3a'); ctx.shadowBlur = 14;
-    ctx.beginPath(); ctx.arc(x, y, r * 1.22, 0, Math.PI * 2); ctx.stroke();
+    ctx.strokeStyle = withAlpha(T.fx('#ff7a3a'), 0.45);
+    ctx.lineWidth = 2.5; ctx.shadowColor = T.fx('#ff5a2a'); ctx.shadowBlur = 16;
+    ctx.beginPath(); ctx.ellipse(x, y, r * 1.25, r * 1.32, 0, 0, Math.PI * 2); ctx.stroke();
     ctx.restore();
-    // golden crown spikes
-    ctx.save();
-    ctx.shadowColor = 'rgba(180,120,40,0.6)'; ctx.shadowBlur = 6 * G + 3;
+    ctx.save(); ctx.shadowColor = 'rgba(180,120,40,0.6)'; ctx.shadowBlur = 6 * G + 3;
     for (let i = -2; i <= 2; i++) {
-      brushStroke(ctx, [{ x: x + i * r * 0.3, y: y - r * 0.78 }, { x: x + i * r * 0.3 + 3, y: y - r * 1.16 }], r * 0.13, T.ui.gold, true);
+      brushStroke(ctx, [{ x: x + i * r * 0.26, y: ty + r * 0.06 }, { x: x + i * r * 0.26 + 2, y: ty - r * 0.34 }], r * 0.12, T.ui.gold, true);
     }
     ctx.restore();
   }
 
-  // --- heavy furrowed brow ---
+  // --- furry hands cupping the cheeks (the signature ORV pose) ---
   for (const s of [-1, 1]) {
-    brushStroke(ctx, [
-      { x: x + s * r * 0.58, y: y - r * 0.3 },
-      { x: x + s * r * 0.12, y: y - r * 0.08 },
-    ], r * 0.16, '#120a10', true);
+    const px = x + s * r * 0.86, py = y + r * 0.5;
+    ctx.fillStyle = furDk; inkBlob(ctx, px, py, r * 0.46, seed + (s > 0 ? 40 : 80), 0.26, 11); ctx.fill();
+    ctx.fillStyle = furBase; inkBlob(ctx, px - s * r * 0.04, py - r * 0.02, r * 0.4, seed + (s > 0 ? 41 : 81), 0.22, 11); ctx.fill();
+    // fingers fanning up the cheek toward the eye
+    for (let f = 0; f < 4; f++) {
+      const fxp = px - s * r * 0.22 + s * f * r * 0.16;
+      const fyp = py - r * 0.26 - (3 - f) * r * 0.03;
+      ctx.fillStyle = f % 2 ? furLt : furBase;
+      ctx.beginPath(); ctx.ellipse(fxp, fyp, r * 0.092, r * 0.2, -s * 0.16, 0, Math.PI * 2); ctx.fill();
+      ctx.lineWidth = 1; ctx.strokeStyle = 'rgba(30,22,14,0.25)'; ctx.stroke();
+    }
   }
 
-  // --- glowing slit eyes (angry slant, cat-pupil) ---
-  const eyeGlow = G > 1 ? '#ff5d6c' : (boss ? '#ff8a3a' : '#ffd23a');
+  // --- big slanted red eyes ---
+  const eyeCol = flash ? '#3a1410' : (boss ? '#ff7a36' : '#e23f29');
   for (const s of [-1, 1]) {
-    const ex = x + s * r * 0.34, ey = y - r * 0.02;
+    const ex = x + s * r * 0.33, ey = y - r * 0.06;
+    // fur brow drooping over the eye
+    brushStroke(ctx, [{ x: ex - s * r * 0.24, y: ey - r * 0.13 }, { x: ex, y: ey - r * 0.2 }, { x: ex + s * r * 0.2, y: ey - r * 0.12 }], r * 0.11, furBase, true);
     ctx.save();
-    ctx.translate(ex, ey); ctx.rotate(s * 0.45);
-    ctx.shadowColor = flash ? 'transparent' : eyeGlow;
-    ctx.shadowBlur = flash ? 0 : (G > 1 ? 12 : 6);
-    ctx.fillStyle = flash ? '#200' : eyeGlow;
-    ctx.beginPath(); ctx.ellipse(0, 0, r * 0.23, r * 0.12, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.translate(ex, ey); ctx.rotate(s * 0.3);
+    ctx.fillStyle = '#180c08';
+    ctx.beginPath(); ctx.ellipse(0, 0, r * 0.27, r * 0.18, 0, 0, Math.PI * 2); ctx.fill();
+    if (!flash) { ctx.shadowColor = eyeCol; ctx.shadowBlur = 10 + G * 8; }
+    const ig = ctx.createRadialGradient(-r * 0.05, -r * 0.05, r * 0.02, 0, 0, r * 0.2);
+    ig.addColorStop(0, flash ? '#5a2018' : '#ffae84'); ig.addColorStop(0.5, eyeCol); ig.addColorStop(1, '#761a10');
+    ctx.fillStyle = ig;
+    ctx.beginPath(); ctx.ellipse(0, 0, r * 0.2, r * 0.135, 0, 0, Math.PI * 2); ctx.fill();
     ctx.shadowBlur = 0;
-    ctx.fillStyle = '#160606'; // vertical slit pupil
-    ctx.beginPath(); ctx.ellipse(0, 0, r * 0.05, r * 0.1, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#160605';
+    ctx.beginPath(); ctx.ellipse(r * 0.02, 0, r * 0.06, r * 0.1, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = 'rgba(255,244,236,0.85)';
+    ctx.beginPath(); ctx.arc(-r * 0.06, -r * 0.05, r * 0.032, 0, Math.PI * 2); ctx.fill();
     ctx.restore();
   }
 
-  // --- wide jagged fanged grin ---
-  const my = y + r * 0.4;
-  const mw = r * 0.86;
-  ctx.fillStyle = '#23070a';
+  // --- open fanged grin ---
+  const my = y + r * 0.47, mw = r * 0.56;
+  ctx.fillStyle = '#1b0708';
   ctx.beginPath();
-  ctx.moveTo(x - mw / 2, my - r * 0.05);
-  ctx.quadraticCurveTo(x, my - r * 0.16, x + mw / 2, my - r * 0.05);
-  ctx.quadraticCurveTo(x, my + r * 0.2, x - mw / 2, my - r * 0.05);
+  ctx.moveTo(x - mw / 2, my - r * 0.02);
+  ctx.quadraticCurveTo(x, my - r * 0.1, x + mw / 2, my - r * 0.02);
+  ctx.quadraticCurveTo(x + mw * 0.44, my + r * 0.32, x, my + r * 0.34);
+  ctx.quadraticCurveTo(x - mw * 0.44, my + r * 0.32, x - mw / 2, my - r * 0.02);
   ctx.closePath(); ctx.fill();
-  // teeth (interlocking fangs)
-  ctx.fillStyle = '#f1e7d2';
-  const tn = boss ? 7 : 5;
-  for (let i = 0; i < tn; i++) {
-    const tx = x - mw / 2 + mw * (i + 0.5) / tn;
-    ctx.beginPath(); // upper fang pointing down
-    ctx.moveTo(tx - mw * 0.06, my - r * 0.08);
-    ctx.lineTo(tx + mw * 0.06, my - r * 0.08);
-    ctx.lineTo(tx, my + r * 0.04);
-    ctx.closePath(); ctx.fill();
-  }
-  for (let i = 0; i < tn - 1; i++) {
-    const tx = x - mw / 2 + mw * (i + 1) / tn;
-    ctx.beginPath(); // lower fang pointing up
-    ctx.moveTo(tx - mw * 0.05, my + r * 0.1);
-    ctx.lineTo(tx + mw * 0.05, my + r * 0.1);
-    ctx.lineTo(tx, my + r * 0.01);
+  ctx.fillStyle = '#f3ead6';
+  for (const s of [-1, 1]) {
+    const fxp = x + s * mw * 0.3;
+    ctx.beginPath();
+    ctx.moveTo(fxp - mw * 0.08, my - r * 0.02); ctx.lineTo(fxp + mw * 0.08, my - r * 0.02); ctx.lineTo(fxp, my + r * 0.13);
     ctx.closePath(); ctx.fill();
   }
 
@@ -673,6 +648,15 @@ function roundedBar(ctx, x, y, w, h, color) {
   ctx.arcTo(x, y + h, x, y, r);
   ctx.arcTo(x, y, x + w, y, r);
   ctx.closePath(); ctx.fill();
+}
+
+// Blend hex `a` toward hex `b` by t (0..1) → rgb() string.
+function mix(a, b, t) {
+  if (!a || a[0] !== '#' || a.length < 7) return a;
+  const bb = (b && b[0] === '#' && b.length >= 7) ? b : '#000000';
+  const pa = parseInt(a.slice(1), 16), pb = parseInt(bb.slice(1), 16);
+  const c = (sa, sb) => Math.round(sa * (1 - t) + sb * t);
+  return `rgb(${c((pa >> 16) & 255, (pb >> 16) & 255)},${c((pa >> 8) & 255, (pb >> 8) & 255)},${c(pa & 255, pb & 255)})`;
 }
 
 function shift(hex, amt) {

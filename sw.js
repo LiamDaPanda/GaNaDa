@@ -1,5 +1,5 @@
 // sw.js — minimal offline cache so the game is installable & playable offline.
-const CACHE = 'ganada-v16';
+const CACHE = 'ganada-v17';
 const ASSETS = [
   './',
   './index.html',
