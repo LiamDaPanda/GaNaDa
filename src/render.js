@@ -495,16 +495,22 @@ export function drawDokkaebi(ctx, e, time = 0) {
     smoothBlob(ctx, head);
     if (flash) ctx.fillStyle = '#fff';
     else {
-      const bg = ctx.createRadialGradient(x - r * 0.3, y - r * 0.5, r * 0.2, x, y, r * 1.25);
-      bg.addColorStop(0, furLt); bg.addColorStop(0.6, furBase); bg.addColorStop(1, furDk);
+      const bg = ctx.createLinearGradient(x, y - r, x, y + r);
+      bg.addColorStop(0, furLt); bg.addColorStop(1, furDk);
       ctx.fillStyle = bg;
     }
     ctx.fill();
-    ctx.lineWidth = Math.max(1.2, r * 0.05); ctx.strokeStyle = 'rgba(20,14,10,0.4)'; ctx.stroke();
-    ctx.save(); ctx.globalAlpha = 0.5; ctx.strokeStyle = 'rgba(255,252,244,0.9)';
-    ctx.lineWidth = r * 0.1; ctx.lineCap = 'round';
-    ctx.beginPath(); ctx.arc(x, y - r * 0.05, r * 0.82, Math.PI * 0.92, Math.PI * 1.4); ctx.stroke();
-    ctx.restore();
+    // calligraphic brushed ink outline (enso-like, thick belly, dry open top)
+    if (flash) { ctx.lineWidth = r * 0.05; ctx.strokeStyle = '#fff'; ctx.stroke(); }
+    else {
+      const rim = [];
+      for (let i = 0; i <= 18; i++) {
+        const a = -Math.PI * 0.5 + 0.18 + (i / 18) * (Math.PI * 2 - 0.36);
+        const wide = 1 - 0.08 * Math.sin(a);
+        rim.push({ x: x + Math.cos(a) * r * 0.95 * wide, y: y + Math.sin(a) * r * 1.05 });
+      }
+      brushStroke(ctx, rim, r * 0.1, '#1c1610', true);
+    }
 
     // --- big slanted red eyes ---
     const eyeCol = flash ? '#3a1410' : '#e23f29';
@@ -553,24 +559,24 @@ export function drawDokkaebi(ctx, e, time = 0) {
       ctx.closePath(); ctx.fill();
     }
 
-    // --- horns from the FRONT (forehead), curling outward, boss-ish ---
+    // --- sharp cone horns from the front of the forehead ---
     for (const s of [-1, 1]) {
-      ctx.save();
-      ctx.translate(x + s * r * 0.32, y - r * 0.5);
-      ctx.scale(s, 1);
-      const hw = r * 0.28, hh = r * 1.0;
+      const bx = x + s * r * 0.3, bby = y - r * 0.66;     // base on the forehead
+      const tipx = x + s * r * 0.56, tipy = y - r * 1.66; // sharp tip, up and out
+      const bw2 = r * 0.24;
       ctx.beginPath();
-      ctx.moveTo(-hw * 0.4, hh * 0.1);
-      ctx.quadraticCurveTo(-hw * 0.1, -hh * 0.45, hw * 0.15, -hh * 0.78);
-      ctx.quadraticCurveTo(hw * 0.5, -hh * 1.02, hw * 0.95, -hh * 0.9);
-      ctx.quadraticCurveTo(hw * 0.62, -hh * 0.66, hw * 0.7, -hh * 0.34);
-      ctx.quadraticCurveTo(hw * 0.85, -hh * 0.05, hw * 0.62, hh * 0.12);
-      ctx.quadraticCurveTo(hw * 0.2, hh * 0.26, -hw * 0.4, hh * 0.1);
+      ctx.moveTo(bx - s * bw2 * 0.5, bby);
+      ctx.lineTo(tipx, tipy);
+      ctx.lineTo(bx + s * bw2 * 0.5, bby);
       ctx.closePath();
-      const hg = ctx.createLinearGradient(-hw, 0, hw, 0);
-      hg.addColorStop(0, '#e2b75e'); hg.addColorStop(1, '#8f6a2c');
+      const hg = ctx.createLinearGradient(bx, bby, tipx, tipy);
+      hg.addColorStop(0, '#b58c3c'); hg.addColorStop(1, '#ecc873');
       ctx.fillStyle = flash ? '#fff' : hg; ctx.fill();
-      ctx.lineWidth = Math.max(1, r * 0.025); ctx.strokeStyle = 'rgba(60,42,16,0.55)'; ctx.stroke();
+      ctx.lineWidth = Math.max(1, r * 0.022); ctx.lineJoin = 'round'; ctx.strokeStyle = '#3a2810'; ctx.stroke();
+      // center ridge for a cone look
+      ctx.save(); ctx.globalAlpha = 0.5;
+      ctx.beginPath(); ctx.moveTo(bx, bby - r * 0.02); ctx.lineTo(tipx, tipy);
+      ctx.lineWidth = Math.max(1, r * 0.016); ctx.strokeStyle = '#6e5018'; ctx.stroke();
       ctx.restore();
     }
   }
