@@ -384,6 +384,27 @@ export function paintGameOverSeal() {
   inkSplat(ctx, cx, cy, 62, 17, '#7a3a32', 0.6);
 }
 
+// Drifting plum-blossom petals — a soft foreground motif that gives the
+// scene life and reinforces the ink-painting mood. Colours allowed.
+export function plumPetals(ctx, W, H, time, color = '#e7b6c6') {
+  for (let i = 0; i < 10; i++) {
+    const sp = 12 + (i % 4) * 6;
+    const x = (((i * 137.5 + time * sp * 0.5) % (W + 80)) - 40) + Math.sin(time * 0.5 + i) * 26;
+    const y = ((i * 213.7 + time * sp) % (H + 80)) - 40;
+    const s = 3.5 + (i % 3) * 1.6;
+    ctx.save();
+    ctx.translate(x, y); ctx.rotate(time * (0.6 + (i % 3) * 0.25) + i);
+    ctx.globalAlpha = 0.42;
+    ctx.fillStyle = i % 4 === 0 ? '#f1e3cf' : color; // a few pale petals among the pink
+    ctx.beginPath();
+    ctx.moveTo(0, -s);
+    ctx.quadraticCurveTo(s * 0.9, -s * 0.1, 0, s);
+    ctx.quadraticCurveTo(-s * 0.9, -s * 0.1, 0, -s);
+    ctx.closePath(); ctx.fill();
+    ctx.restore();
+  }
+}
+
 // An overhanging plum branch in a top corner — sumi/ancient foreground accent.
 export function cornerBranch(ctx, W, time, T) {
   if (T.style === 'neon') return;

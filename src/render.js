@@ -3,7 +3,7 @@
 // palette and a `style` that picks the background decorations.
 
 import { getTheme } from './themes.js';
-import { skyMotifs, cornerBranch } from './art.js';
+import { skyMotifs, cornerBranch, plumPetals } from './art.js';
 
 function rng(seed) {
   let s = (seed >>> 0) || 1;
@@ -84,6 +84,18 @@ function fillUnder(ctx, pts, laneY, W, fill) {
   ctx.closePath();
   ctx.fillStyle = fill;
   ctx.fill();
+}
+
+// Subtle, stable hanji paper mottle so the whole scene reads as ink on paper.
+function paperGrain(ctx, W, H, T) {
+  const r = rng(20240);
+  ctx.save();
+  for (let i = 0; i < 26; i++) {
+    ctx.globalAlpha = 0.012 + r() * 0.022;
+    ctx.fillStyle = r() > 0.5 ? '#000000' : (T.style === 'neon' ? '#0a1830' : '#d8cba0');
+    ctx.beginPath(); ctx.arc(r() * W, r() * H, 26 + r() * 130, 0, Math.PI * 2); ctx.fill();
+  }
+  ctx.restore();
 }
 
 export function drawBackground(ctx, W, H, laneY, wave, time = 0) {
@@ -171,6 +183,10 @@ export function drawBackground(ctx, W, H, laneY, wave, time = 0) {
 
   // overhanging plum branch (매화) framing the top corner
   cornerBranch(ctx, W, time, T);
+
+  // drifting petals + hanji paper grain for a hand-painted feel
+  if (T.style !== 'neon') plumPetals(ctx, W, H, time);
+  paperGrain(ctx, W, H, T);
 
   // vignette
   const vig = ctx.createRadialGradient(W / 2, H * 0.5, H * 0.3, W / 2, H * 0.5, H * 0.8);
@@ -493,6 +509,14 @@ export function drawDokkaebi(ctx, e, time = 0) {
   if (boss) {
     drawBossMask(ctx, x, y, r, { flash, G, T });
   } else {
+    // soft coloured ink bleed behind the head (wet sumi wash)
+    if (!flash) {
+      const halo = ctx.createRadialGradient(x, y, r * 0.78, x, y, r * 1.55);
+      halo.addColorStop(0, withAlpha(body, 0.30));
+      halo.addColorStop(1, withAlpha(body, 0));
+      ctx.fillStyle = halo;
+      ctx.beginPath(); ctx.arc(x, y, r * 1.55, 0, Math.PI * 2); ctx.fill();
+    }
     // --- the round head (soft egg, no hard corners) ---
     const head = [];
     for (let i = 0; i < 14; i++) {
@@ -508,6 +532,20 @@ export function drawDokkaebi(ctx, e, time = 0) {
       ctx.fillStyle = bg;
     }
     ctx.fill();
+    // internal ink-wash mottle (clipped) — uneven, hand-painted wash
+    if (!flash) {
+      ctx.save();
+      smoothBlob(ctx, head); ctx.clip();
+      ctx.globalCompositeOperation = 'multiply';
+      const mr2 = rng(seed + 17);
+      for (let i = 0; i < 3; i++) {
+        ctx.globalAlpha = 0.07 + mr2() * 0.08;
+        ctx.fillStyle = '#1a140e';
+        inkBlob(ctx, x + (mr2() - 0.5) * r * 0.8, y + (0.12 + mr2() * 0.55) * r, r * (0.3 + mr2() * 0.3), seed + i * 9, 0.5, 8);
+        ctx.fill();
+      }
+      ctx.restore();
+    }
     // calligraphic brushed ink outline (enso-like, thick belly, dry open top)
     if (flash) { ctx.lineWidth = r * 0.05; ctx.strokeStyle = '#fff'; ctx.stroke(); }
     else {
