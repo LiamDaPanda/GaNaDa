@@ -11,7 +11,7 @@ import { UPGRADES } from './upgrades.js';
 import { getTheme } from './themes.js';
 import { t } from './i18n.js';
 import { Ring, Flash, Bolt, Beam, Shards, Streak, Wisp, Smoke, Crack, Crystal, Gas, Rays } from './effects.js';
-import { InkWash, InkSplat, Enso, BrushSlash, InkGlyph } from './effects.js';
+import { InkWash, InkSplat, Enso, BrushSlash, InkGlyph, Sparkle } from './effects.js';
 import * as Prog from './progression.js';
 
 const SAVE_KEY = 'ganada_save_v1';
@@ -484,9 +484,10 @@ export class Game {
     this.spawnBurst(x, y, atk.color, atk.kind === 'nova' ? 60 : 30);
     // animated impact: flash core + expanding shockwave ring + element flavour
     const R = Math.max(40, atk.radius || 70);
-    // calligraphic ink hit — a luminous wash that blooms and a fling of droplets
-    this.effects.push(new InkWash(x, y, R * 1.05, atk.glow));
+    // calligraphic ink hit — a luminous wash, a fling of droplets and a twinkle
+    this.effects.push(new InkWash(x, y, R * 1.15, atk.glow));
     this.effects.push(new InkSplat(x, y, R * (atk.kind === 'nova' ? 1.1 : 0.85), atk.color));
+    this.effects.push(new Sparkle(x, y, R * 0.7, atk.glow, 0.5));
     this.effects.push(new Ring(x, y, 8, R * (atk.kind === 'nova' ? 1.4 : 1.1), atk.kind === 'nova' ? 0.6 : 0.45, atk.color, 6));
     this.elementBurst(x, y, atk, R);
     if (atk.kind === 'nova') {
@@ -577,7 +578,11 @@ export class Game {
     this.state.kills++;
     this.state.score += Math.round(e.maxHp * mult);
     Audio.enemyDie();
-    this.spawnBurst(e.x, e.y, e.def.color, e.def.boss ? 50 : 18);
+    // satisfying death pop: ink bloom + twinkle + burst
+    this.spawnBurst(e.x, e.y, e.def.color, e.def.boss ? 60 : 24);
+    this.effects.push(new InkWash(e.x, e.y, e.radius * (e.def.boss ? 2.2 : 1.5), e.def.color));
+    this.effects.push(new Sparkle(e.x, e.y, e.radius * (e.def.boss ? 1.5 : 1.0), '#ffe9b0', e.def.boss ? 0.7 : 0.5));
+    this.effects.push(new Ring(e.x, e.y, 4, e.radius * (e.def.boss ? 2.4 : 1.6), 0.5, e.def.color, 4));
     this.texts.push(new FloatingText(e.x, e.y - 10, `+${e.gold}₩`, '#c79a3e', 16));
     if (this.combo > 1 && this.combo % 5 === 0) {
       this.texts.push(new FloatingText(this.W / 2, this.H * 0.42, t('toast.combo', { n: this.combo, m: mult.toFixed(2) }), '#c79a3e', 24));

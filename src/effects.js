@@ -362,19 +362,53 @@ function eRibbon(ctx, pts, widths, color) {
 }
 
 // Diffusing ink bloom — a wet wash that spreads and soaks away (impact core).
+// Drawn additively for a soft dreamy glow.
 export class InkWash extends Effect {
   constructor(x, y, r, color) { super(0.5); this.x = x; this.y = y; this.r = r; this.color = color; }
   draw(ctx) {
     const T = getTheme(); const k = this.k;
-    const r = this.r * (0.4 + easeOut(k));
+    const r = this.r * (0.4 + easeOut(k) * 1.1);
     const col = T.fx(this.color);
     const g = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, r);
-    g.addColorStop(0, hexA('#fffaf0', (1 - k) * 0.6));
-    g.addColorStop(0.4, hexA(col, (1 - k) * 0.34));
+    g.addColorStop(0, hexA('#fffdf6', (1 - k) * 0.8));
+    g.addColorStop(0.35, hexA(col, (1 - k) * 0.5));
     g.addColorStop(1, hexA(col, 0));
     ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
     ctx.fillStyle = g;
     ctx.beginPath(); ctx.arc(this.x, this.y, r, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+  }
+}
+
+// A flashy twinkle — soft additive glow + a four-point starburst. Satisfying
+// little pop for casts, kills and combos.
+export class Sparkle extends Effect {
+  constructor(x, y, r, color, life = 0.5) {
+    super(life); this.x = x; this.y = y; this.r = r; this.color = color; this.rot = Math.random() * Math.PI;
+  }
+  draw(ctx) {
+    const T = getTheme(); const k = this.k; const a = 1 - k;
+    const col = T.fx(this.color);
+    const R = this.r * (0.35 + easeOut(k) * 1.0);
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.translate(this.x, this.y); ctx.rotate(this.rot + k * 0.5);
+    const g = ctx.createRadialGradient(0, 0, 0, 0, 0, R);
+    g.addColorStop(0, hexA('#fffdf3', a * 0.95));
+    g.addColorStop(0.3, hexA(col, a * 0.75));
+    g.addColorStop(1, hexA(col, 0));
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(0, 0, R, 0, Math.PI * 2); ctx.fill();
+    // four-point star
+    ctx.fillStyle = hexA('#fff8e8', a);
+    const L = R * 2.1, w = R * 0.1;
+    for (let i = 0; i < 4; i++) {
+      ctx.rotate(Math.PI / 2);
+      ctx.beginPath();
+      ctx.moveTo(0, 0); ctx.lineTo(w, -L * 0.32); ctx.lineTo(0, -L); ctx.lineTo(-w, -L * 0.32);
+      ctx.closePath(); ctx.fill();
+    }
     ctx.restore();
   }
 }
@@ -394,7 +428,7 @@ export class InkSplat extends Effect {
     const T = getTheme(); const k = this.k; const a = 1 - k;
     const col = T.fx(this.color);
     ctx.save();
-    if (T.glow > 0.6) { ctx.shadowColor = col; ctx.shadowBlur = 10 * T.glow; }
+    ctx.shadowColor = col; ctx.shadowBlur = 12 + 10 * T.glow;
     // central wet blob
     const br = this.r * (0.3 + 0.45 * easeOut(k));
     ctx.globalAlpha = a * 0.95; ctx.fillStyle = INK_LIGHT;

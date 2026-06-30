@@ -86,6 +86,26 @@ function fillUnder(ctx, pts, laneY, W, fill) {
   ctx.fill();
 }
 
+// Dreamy floating light motes (bokeh) drifting gently upward, additive glow.
+function bokeh(ctx, W, H, time, T) {
+  ctx.save();
+  ctx.globalCompositeOperation = 'lighter';
+  for (let i = 0; i < 16; i++) {
+    const speed = 4 + (i % 4) * 4;
+    const bx = ((i * 97.3) % W) + Math.sin(time * 0.18 + i) * 40;
+    const yy = H - (((time * speed) + i * 131) % (H + 80));
+    const rad = 6 + (i % 5) * 5;
+    const pulse = 0.5 + 0.5 * Math.sin(time * 1.1 + i * 1.3);
+    const col = i % 3 === 0 ? T.ui.gold : (i % 3 === 1 ? '#cdd7ee' : T.ui.ink);
+    const g = ctx.createRadialGradient(bx, yy, 0, bx, yy, rad);
+    g.addColorStop(0, withAlpha(col, 0.08 + pulse * 0.10));
+    g.addColorStop(1, withAlpha(col, 0));
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(bx, yy, rad, 0, Math.PI * 2); ctx.fill();
+  }
+  ctx.restore();
+}
+
 // Subtle, stable hanji paper mottle so the whole scene reads as ink on paper.
 function paperGrain(ctx, W, H, T) {
   const r = rng(20240);
@@ -106,6 +126,14 @@ export function drawBackground(ctx, W, H, laneY, wave, time = 0) {
   for (const [stop, col] of T.sky) sky.addColorStop(stop, col);
   ctx.fillStyle = sky;
   ctx.fillRect(0, 0, W, H);
+
+  // dreamy colour wash near the horizon
+  if (T.style !== 'neon') {
+    const wash = ctx.createLinearGradient(0, laneY - 220, 0, laneY + 20);
+    wash.addColorStop(0, 'rgba(86,74,128,0)');
+    wash.addColorStop(1, T.style === 'stone' ? 'rgba(150,96,70,0.16)' : 'rgba(122,92,152,0.16)');
+    ctx.fillStyle = wash; ctx.fillRect(0, laneY - 220, W, 240);
+  }
 
   // stars / city lights
   const sr = rng(1337);
@@ -184,7 +212,8 @@ export function drawBackground(ctx, W, H, laneY, wave, time = 0) {
   // overhanging plum branch (매화) framing the top corner
   cornerBranch(ctx, W, time, T);
 
-  // drifting petals + hanji paper grain for a hand-painted feel
+  // dreamy floating light motes + drifting petals + hanji grain
+  bokeh(ctx, W, H, time, T);
   if (T.style !== 'neon') plumPetals(ctx, W, H, time);
   paperGrain(ctx, W, H, T);
 
@@ -204,6 +233,27 @@ function drawMoon(ctx, W, H, time, T) {
   halo.addColorStop(1, T.moon.halo.replace(/[\d.]+\)$/, '0)'));
   ctx.fillStyle = halo;
   ctx.fillRect(mx - mr * 3.2, my - mr * 3.2, mr * 6.4, mr * 6.4);
+  // dreamy bloom + gentle light rays (non-neon)
+  if (T.style !== 'neon') {
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    const bloom = ctx.createRadialGradient(mx, my, mr * 0.3, mx, my, mr * 4.4);
+    bloom.addColorStop(0, 'rgba(247,240,214,0.16)');
+    bloom.addColorStop(1, 'rgba(247,240,214,0)');
+    ctx.fillStyle = bloom;
+    ctx.fillRect(mx - mr * 4.4, my - mr * 4.4, mr * 8.8, mr * 8.8);
+    ctx.translate(mx, my); ctx.rotate(time * 0.03);
+    for (let i = 0; i < 12; i++) {
+      ctx.rotate(Math.PI / 6);
+      ctx.globalAlpha = 0.04 + 0.03 * Math.sin(time * 0.8 + i);
+      const grd = ctx.createLinearGradient(0, 0, 0, -mr * 3.6);
+      grd.addColorStop(0, 'rgba(247,240,214,0.5)');
+      grd.addColorStop(1, 'rgba(247,240,214,0)');
+      ctx.fillStyle = grd;
+      ctx.beginPath(); ctx.moveTo(-mr * 0.28, 0); ctx.lineTo(0, -mr * 3.6); ctx.lineTo(mr * 0.28, 0); ctx.closePath(); ctx.fill();
+    }
+    ctx.restore();
+  }
   if (T.moon.ring) { // neon concentric rings
     ctx.strokeStyle = T.moon.ring;
     ctx.shadowColor = T.moon.ring; ctx.shadowBlur = 10;
