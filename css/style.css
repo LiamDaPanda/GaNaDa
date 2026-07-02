@@ -451,6 +451,14 @@ html, body {
   z-index: 6;
 }
 #banner.show { opacity: 1; transform: translateY(0) scale(1); }
+#banner::before {
+  content: '';
+  position: absolute; left: 50%; top: 50%;
+  width: min(86vw, 420px); height: 120px;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(50% 50% at 50% 50%, rgba(8,5,14,0.55) 0%, rgba(8,5,14,0) 72%);
+  z-index: -1;
+}
 .banner-title {
   font-family: var(--font-brush);
   font-size: 44px;

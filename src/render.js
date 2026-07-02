@@ -63,6 +63,68 @@ export function brushStroke(ctx, pts, maxW, color, taper = true) {
   ctx.fill();
 }
 
+// Variable-width ink ribbon (per-point half-widths, smoothed edges).
+function varRibbon(ctx, pts, widths, color) {
+  const n = pts.length;
+  if (n < 2) return;
+  const left = [], right = [];
+  for (let i = 0; i < n; i++) {
+    const p = pts[i];
+    const prev = pts[Math.max(0, i - 1)];
+    const next = pts[Math.min(n - 1, i + 1)];
+    let dx = next.x - prev.x, dy = next.y - prev.y;
+    const len = Math.hypot(dx, dy) || 1; dx /= len; dy /= len;
+    const hw = widths[i] / 2;
+    left.push({ x: p.x - dy * hw, y: p.y + dx * hw });
+    right.push({ x: p.x + dy * hw, y: p.y - dx * hw });
+  }
+  ctx.beginPath();
+  ctx.moveTo(left[0].x, left[0].y);
+  for (let i = 1; i < n - 1; i++) {
+    ctx.quadraticCurveTo(left[i].x, left[i].y, (left[i].x + left[i + 1].x) / 2, (left[i].y + left[i + 1].y) / 2);
+  }
+  ctx.lineTo(left[n - 1].x, left[n - 1].y);
+  ctx.lineTo(right[n - 1].x, right[n - 1].y);
+  for (let i = n - 1; i > 1; i--) {
+    ctx.quadraticCurveTo(right[i - 1].x, right[i - 1].y, (right[i - 1].x + right[i - 2].x) / 2, (right[i - 1].y + right[i - 2].y) / 2);
+  }
+  ctx.lineTo(right[0].x, right[0].y);
+  ctx.closePath();
+  ctx.fillStyle = color;
+  ctx.fill();
+}
+
+// Pressure from speed: a real brush pools ink when the hand slows and thins to
+// a dry flick when it moves fast. Returns per-point widths for varRibbon.
+function pressureWidths(pts, baseW) {
+  const n = pts.length;
+  const w = new Array(n);
+  for (let i = 0; i < n; i++) {
+    const a = pts[Math.max(0, i - 1)], b = pts[Math.min(n - 1, i + 1)];
+    const speed = Math.hypot(b.x - a.x, b.y - a.y) / 2;
+    const t = Math.max(0, Math.min(1, (speed - 2) / 16)); // 0 slow → 1 fast
+    w[i] = baseW * (1.35 - t * 0.95);
+  }
+  for (let k = 0; k < 2; k++) { // relax so width changes flow, not jump
+    for (let i = 1; i < n - 1; i++) w[i] = (w[i - 1] + w[i] + w[i + 1]) / 3;
+  }
+  // 입필: wet, blunt entry — 필세: the exit thins to a flick
+  const head = Math.min(4, n >> 2);
+  for (let i = 0; i < head; i++) w[i] *= 0.7 + 0.3 * (i / head);
+  const tail = Math.min(7, n >> 2);
+  for (let i = 0; i < tail; i++) {
+    const idx = n - 1 - i;
+    w[idx] *= 0.12 + 0.88 * (i / tail);
+  }
+  return w;
+}
+
+// A living calligraphy stroke: width follows the hand's speed.
+export function calligraphyStroke(ctx, pts, baseW, color) {
+  if (pts.length < 2) return;
+  varRibbon(ctx, pts, pressureWidths(pts, baseW), color);
+}
+
 function wavyTop(W, baseY, amp, freq, seed) {
   const r = rng(seed);
   const pts = [];
@@ -289,14 +351,36 @@ function inkRidge(ctx, W, laneY, baseY, amp, freq, seed, wash, crest) {
   const grad = ctx.createLinearGradient(0, baseY - amp, 0, laneY);
   grad.addColorStop(0, crest); grad.addColorStop(1, wash);
   fillUnder(ctx, pts, laneY, W, grad);
-  ctx.save(); ctx.globalAlpha = 0.5;
-  brushStroke(ctx, pts.filter((_, i) => i % 2 === 0), 2.4, crest, false);
+  // dry-brush crest: broken segments where the brush skipped the paper
+  const sparse = pts.filter((_, i) => i % 2 === 0);
+  const gr = rng(seed + 500);
+  ctx.save();
+  let i = 0;
+  while (i < sparse.length - 2) {
+    const run = 2 + Math.floor(gr() * 4);
+    const seg = sparse.slice(i, Math.min(sparse.length, i + run + 1));
+    ctx.globalAlpha = 0.3 + gr() * 0.35;
+    if (seg.length > 1) brushStroke(ctx, seg, 1.6 + gr() * 1.8, crest, true);
+    i += run + (gr() > 0.55 ? 1 : 0); // occasional skip = dry gap
+  }
   ctx.restore();
+}
+
+// A horizontal breath of mist (여백) that separates the layered ranges.
+function mistBand(ctx, W, y, h, tint, alpha) {
+  const g = ctx.createLinearGradient(0, y - h, 0, y + h);
+  g.addColorStop(0, withAlpha(tint, 0));
+  g.addColorStop(0.5, withAlpha(tint, alpha));
+  g.addColorStop(1, withAlpha(tint, 0));
+  ctx.fillStyle = g;
+  ctx.fillRect(0, y - h, W, h * 2);
 }
 
 function sumiMidground(ctx, W, laneY, time, T) {
   inkRidge(ctx, W, laneY, laneY - 34, 30, 0.016, 11, withAlpha(T.ridge[0], 0.85), T.crest);
+  mistBand(ctx, W, laneY - 26, 12, '#cdd7ee', 0.10);
   inkRidge(ctx, W, laneY, laneY - 16, 44, 0.024, 27, withAlpha(T.ridge[1], 0.92), T.crest);
+  mistBand(ctx, W, laneY - 8, 10, '#cdd7ee', 0.08);
   inkRidge(ctx, W, laneY, laneY + 2, 58, 0.034, 41, T.ridge[2], T.crest);
   const br = rng(202);
   ctx.save();
@@ -470,6 +554,20 @@ export function drawGate(ctx, gateX, laneY, H, hpFrac, time = 0, charge = 0) {
   ctx.quadraticCurveTo(gateX, roofY - 12, x + w + 24, roofY + 2);
   ctx.quadraticCurveTo(gateX, roofY + 8, x - 24, roofY + 2);
   ctx.closePath(); ctx.fill();
+
+  // 현판 — the gate's name tablet, hand-lettered in brush script
+  {
+    const tw2 = 34, th2 = 20, ty2 = roofY + 14;
+    ctx.fillStyle = 'rgba(16,11,8,0.95)';
+    ctx.fillRect(gateX - tw2 / 2, ty2, tw2, th2);
+    ctx.strokeStyle = withAlpha(T.ui.gold, 0.75);
+    ctx.lineWidth = 1.4;
+    ctx.strokeRect(gateX - tw2 / 2 + 1.5, ty2 + 1.5, tw2 - 3, th2 - 3);
+    ctx.fillStyle = '#efe7d2';
+    ctx.font = "15px 'Nanum Brush Script', cursive";
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('문', gateX, ty2 + th2 / 2 + 1);
+  }
 
   // ward (taegeuk) — themed colours + health-tinted glow
   const g = Math.max(0, Math.min(1, hpFrac));

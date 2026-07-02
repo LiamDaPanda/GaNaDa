@@ -6,7 +6,7 @@ import {
 } from './attacks.js';
 import { Enemy, Projectile, Particle, FloatingText } from './entities.js';
 import { Audio } from './audio.js';
-import { drawDokkaebi, drawGate, drawBackground, brushStroke, inkBlob } from './render.js';
+import { drawDokkaebi, drawGate, drawBackground, brushStroke, inkBlob, calligraphyStroke } from './render.js';
 import { UPGRADES } from './upgrades.js';
 import { getTheme } from './themes.js';
 import { t, getLang } from './i18n.js';
@@ -1247,16 +1247,22 @@ export class Game {
     ctx.save();
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    // ring (full + amber in hold mode, countdown in quick mode)
-    ctx.strokeStyle = 'rgba(255,255,255,0.25)';
-    ctx.lineWidth = 4;
+    // brushed enso ring — a faint full circle, then a hand-inked arc that
+    // drains (quick mode) or sits full and amber (hold mode)
+    ctx.strokeStyle = 'rgba(255,255,255,0.16)';
+    ctx.lineWidth = 3;
     ctx.beginPath();
     ctx.arc(cx, cy, 40, 0, Math.PI * 2);
     ctx.stroke();
-    ctx.strokeStyle = this.holdMode ? '#c79a3e' : '#9aa7b8';
-    ctx.beginPath();
-    ctx.arc(cx, cy, 40, -Math.PI / 2, -Math.PI / 2 + frac * Math.PI * 2);
-    ctx.stroke();
+    const sweep = Math.max(0.06, frac) * Math.PI * 2;
+    const steps = Math.max(6, Math.round(30 * frac) + 4);
+    const arc = [];
+    for (let i = 0; i <= steps; i++) {
+      const a = -Math.PI / 2 + (i / steps) * sweep;
+      const rr = 40 * (1 + Math.sin(i * 1.7) * 0.02);
+      arc.push({ x: cx + Math.cos(a) * rr, y: cy + Math.sin(a) * rr });
+    }
+    brushStroke(ctx, arc, 7, this.holdMode ? '#c79a3e' : '#9aa7b8', true);
     // the assembling syllable
     ctx.shadowColor = this.holdMode ? '#c79a3e' : '#9aa7b8';
     ctx.shadowBlur = 16;
@@ -1306,9 +1312,9 @@ export class Game {
     ctx.globalAlpha = 0.5;
     for (const st of this.heldStrokes) {
       if (st.length < 2) continue;
-      brushStroke(ctx, st, 11, s.bleed, true);
-      brushStroke(ctx, st, 8, s.body, true);
-      brushStroke(ctx, st, 4, s.core, true);
+      calligraphyStroke(ctx, st, 11, s.bleed);
+      calligraphyStroke(ctx, st, 8, s.body);
+      calligraphyStroke(ctx, st, 4, s.core);
     }
     ctx.restore();
   }
@@ -1316,12 +1322,16 @@ export class Game {
   drawStroke(ctx) {
     const s = getTheme().stroke;
     ctx.save();
+    // wet pooling where the brush first landed (입필)
+    ctx.fillStyle = s.bleed;
+    inkBlob(ctx, this.stroke[0].x, this.stroke[0].y, 7.5, this.stroke.length + 3, 0.35, 9);
+    ctx.fill();
     ctx.shadowColor = s.bleedShadow;
     ctx.shadowBlur = s.bleedBlur;
-    brushStroke(ctx, this.stroke, 15, s.bleed, true);
+    calligraphyStroke(ctx, this.stroke, 15, s.bleed);
     ctx.shadowBlur = 0;
-    brushStroke(ctx, this.stroke, 11, s.body, true);
-    brushStroke(ctx, this.stroke, 5, s.core, true);
+    calligraphyStroke(ctx, this.stroke, 11, s.body);
+    calligraphyStroke(ctx, this.stroke, 5, s.core);
     const head = this.stroke[this.stroke.length - 1];
     ctx.fillStyle = s.head;
     inkBlob(ctx, head.x, head.y, 5.5, this.stroke.length * 3 + 1, 0.3, 8);
