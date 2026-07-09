@@ -1,20 +1,45 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- 가나다 디펜스 — hand-inked crest: enso ring, brush 가, red seal -->
   <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#2a2238"/>
-      <stop offset="1" stop-color="#150f1f"/>
+    <linearGradient id="paper" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#211a2b"/>
+      <stop offset="1" stop-color="#120d1a"/>
     </linearGradient>
-    <linearGradient id="ink" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#ffd966"/>
-      <stop offset="0.5" stop-color="#9fe3ff"/>
-      <stop offset="1" stop-color="#c89bff"/>
-    </linearGradient>
+    <filter id="rough" x="-20%" y="-20%" width="140%" height="140%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.012 0.016" numOctaves="2" seed="7" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="7" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
   </defs>
-  <rect width="512" height="512" rx="96" fill="url(#bg)"/>
-  <circle cx="384" cy="128" r="46" fill="#fbf3cf" opacity="0.9"/>
-  <!-- stylized ㄱ + ㅅ brushstroke -->
-  <g fill="none" stroke="url(#ink)" stroke-width="34" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M120 150 H300 V330"/>
-    <path d="M150 400 L250 250 L350 400"/>
+  <rect width="512" height="512" rx="96" fill="url(#paper)"/>
+
+  <!-- enso: one brush sweep, heavy belly, dry gap at the upper right -->
+  <g filter="url(#rough)">
+    <circle cx="256" cy="266" r="152" fill="none" stroke="#e9dfc6" stroke-width="30"
+      stroke-linecap="round" stroke-dasharray="820 135" transform="rotate(-58 256 266)" opacity="0.94"/>
+    <circle cx="258" cy="270" r="149" fill="none" stroke="#e9dfc6" stroke-width="14"
+      stroke-linecap="round" stroke-dasharray="500 456" transform="rotate(120 256 266)" opacity="0.5"/>
+  </g>
+
+  <!-- 가 in two brush strokes -->
+  <g filter="url(#rough)" fill="none" stroke="#efe7d2" stroke-linecap="round"
+     stroke-linejoin="round" transform="rotate(-2 256 266)">
+    <path d="M178 196 H272 V342" stroke-width="30"/>
+    <path d="M322 178 V356" stroke-width="28"/>
+    <path d="M322 262 H382" stroke-width="26"/>
+  </g>
+
+  <!-- ink flecks flung off the stroke -->
+  <g fill="#e9dfc6" opacity="0.7">
+    <circle cx="392" cy="126" r="7"/>
+    <circle cx="414" cy="150" r="4.5"/>
+    <circle cx="376" cy="104" r="3.4"/>
+    <circle cx="118" cy="386" r="5"/>
+  </g>
+
+  <!-- 낙관 red seal, carved -->
+  <g transform="rotate(3 396 404)">
+    <rect x="352" y="360" width="88" height="88" rx="14" fill="#b23a2e"/>
+    <rect x="362" y="370" width="68" height="68" rx="9" fill="none" stroke="#e8c9b8" stroke-width="4" opacity="0.55"/>
+    <path d="M374 388 h26 v30 M416 382 v44 M416 404 h12" fill="none" stroke="#1b1310" stroke-width="8" stroke-linecap="square"/>
   </g>
 </svg>

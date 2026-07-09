@@ -993,7 +993,9 @@ export class Game {
 
   missStroke(at) {
     Audio.miss();
-    this.texts.push(new FloatingText(at.x, at.y, '?', '#aaa', 28));
+    // an unrecognized stroke soaks away as a gray smudge — no letter formed
+    this.effects.push(new InkSplat(at.x, at.y, 30, '#5a5560'));
+    this.effects.push(new InkWash(at.x, at.y, 34, '#4a4650'));
   }
 
   restart() {

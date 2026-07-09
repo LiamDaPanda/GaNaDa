@@ -784,11 +784,24 @@ export function drawDokkaebi(ctx, e, time = 0) {
     ctx.restore();
   }
 
-  // hp bar
+  // hp bar — a little ink stroke over the head instead of a geometric rect
   const bw = r * 1.9, bx = x - bw / 2, by = y - r - (boss ? 46 : 20);
-  roundedBar(ctx, bx - 1.5, by - 1.5, bw + 3, 6, 'rgba(0,0,0,0.6)');
   const frac = Math.max(0, e.hp / e.maxHp);
-  roundedBar(ctx, bx, by, bw * frac, 4, `hsl(${frac * 120}, 42%, 46%)`);
+  {
+    const wob = (tt) => Math.sin(tt * 9 + seed) * 0.7;
+    const back = [];
+    for (let i = 0; i <= 6; i++) { const tt = i / 6; back.push({ x: bx + bw * tt, y: by + wob(tt) }); }
+    brushStroke(ctx, back, 6.5, 'rgba(8,5,10,0.62)', false);
+    if (frac > 0.01) {
+      const fill = [];
+      const fw = Math.max(bw * frac, 3);
+      for (let i = 0; i <= 6; i++) { const tt = i / 6; fill.push({ x: bx + fw * tt, y: by + wob(tt * frac) }); }
+      brushStroke(ctx, fill, 4.4, `hsl(${frac * 120}, 46%, 48%)`, false);
+      // wet bead at the leading edge
+      ctx.fillStyle = `hsl(${frac * 120}, 50%, 58%)`;
+      ctx.beginPath(); ctx.arc(bx + fw, by + wob(frac), 2.6, 0, Math.PI * 2); ctx.fill();
+    }
+  }
   if (boss) {
     ctx.fillStyle = T.ui.gold;
     ctx.font = "bold 13px 'Gowun Batang', 'Apple SD Gothic Neo', serif";
@@ -906,17 +919,6 @@ function drawBossMask(ctx, x, y, r, o) {
   }
 }
 
-function roundedBar(ctx, x, y, w, h, color) {
-  ctx.fillStyle = color;
-  ctx.beginPath();
-  const r = h / 2;
-  ctx.moveTo(x + r, y);
-  ctx.arcTo(x + w, y, x + w, y + h, r);
-  ctx.arcTo(x + w, y + h, x, y + h, r);
-  ctx.arcTo(x, y + h, x, y, r);
-  ctx.arcTo(x, y, x + w, y, r);
-  ctx.closePath(); ctx.fill();
-}
 
 // Draw a smooth closed curve through points (midpoint-quadratic).
 function smoothBlob(ctx, pts) {
